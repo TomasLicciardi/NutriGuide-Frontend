@@ -52,7 +52,7 @@ dependencies {
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation("io.coil-kt:coil-compose:2.2.2")
-    implementation("com.github.dhaval2404:imagepicker:2.1")
+    implementation("com.github.Dhaval2404:ImagePicker:2.1")
 
     // Lifecycle
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
