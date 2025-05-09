@@ -1,4 +1,4 @@
-package com.tesis.nurtiguideapp
+package com.tesis.nutriguideapp
 
 import org.junit.Test
 

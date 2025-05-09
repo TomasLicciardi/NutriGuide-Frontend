@@ -1,4 +1,4 @@
-package com.tesis.nurtiguideapp.ui.theme
+package com.tesis.nutriguideapp.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

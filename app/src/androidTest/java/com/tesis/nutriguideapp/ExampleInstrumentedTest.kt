@@ -1,4 +1,4 @@
-package com.tesis.nurtiguideapp
+package com.tesis.nutriguideapp
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -19,6 +19,6 @@ class ExampleInstrumentedTest {
     fun useAppContext() {
         // Context of the app under test.
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        assertEquals("com.tesis.nurtiguideapp", appContext.packageName)
+        assertEquals("com.tesis.nutriguideapp", appContext.packageName)
     }
 }

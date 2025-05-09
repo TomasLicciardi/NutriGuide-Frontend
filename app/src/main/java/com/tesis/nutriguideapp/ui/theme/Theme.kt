@@ -1,4 +1,4 @@
-package com.tesis.nurtiguideapp.ui.theme
+package com.tesis.nutriguideapp.ui.theme
 
 import android.app.Activity
 import android.os.Build
@@ -34,7 +34,7 @@ private val LightColorScheme = lightColorScheme(
 )
 
 @Composable
-fun NurtiGuideAppTheme(
+fun NutriGuideAppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,

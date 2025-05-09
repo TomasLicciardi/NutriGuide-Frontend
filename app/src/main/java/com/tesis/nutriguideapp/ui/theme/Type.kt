@@ -1,4 +1,4 @@
-package com.tesis.nurtiguideapp.ui.theme
+package com.tesis.nutriguideapp.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
