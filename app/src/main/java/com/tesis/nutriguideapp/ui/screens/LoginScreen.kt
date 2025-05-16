@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.tesis.nutriguideapp.api.AuthService
 import com.tesis.nutriguideapp.api.RetrofitInstance
@@ -13,12 +14,14 @@ import com.tesis.nutriguideapp.utils.TokenManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun LoginScreen(context: Context, onLoginSuccess: () -> Unit) {
-    var email by remember { mutableStateOf("") }  // 🔁 Antes era mail
+    var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    val coroutineScope = rememberCoroutineScope()
 
     Column(modifier = Modifier.padding(16.dp)) {
         TextField(
@@ -32,20 +35,27 @@ fun LoginScreen(context: Context, onLoginSuccess: () -> Unit) {
             value = password,
             onValueChange = { password = it },
             label = { Text("Contraseña") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            visualTransformation = PasswordVisualTransformation()
         )
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
             onClick = {
-                CoroutineScope(Dispatchers.IO).launch {
+                errorMessage = null // reset error
+                coroutineScope.launch(Dispatchers.IO) {
                     try {
                         val service = RetrofitInstance.retrofit.create(AuthService::class.java)
-                        val response = service.login(AuthRequest(email, password)) // 🔁
+                        val response = service.login(AuthRequest(email, password))
                         TokenManager(context).saveToken(response.accessToken)
-                        onLoginSuccess()
+
+                        withContext(Dispatchers.Main) {
+                            onLoginSuccess()
+                        }
                     } catch (e: Exception) {
-                        errorMessage = "Error al iniciar sesión"
+                        withContext(Dispatchers.Main) {
+                            errorMessage = "Error al iniciar sesión: ${e.message ?: "Error desconocido"}"
+                        }
                     }
                 }
             },
