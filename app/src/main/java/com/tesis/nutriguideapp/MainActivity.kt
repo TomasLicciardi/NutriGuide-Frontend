@@ -23,12 +23,36 @@ class MainActivity : ComponentActivity() {
                     NavHost(navController = navController, startDestination = "login") {
 
                         composable("login") {
-                            LoginScreen(context = applicationContext) {
-                                navController.navigate("home") {
-                                    popUpTo("login") { inclusive = true }
+                            LoginScreen(
+                                context = applicationContext,
+                                onLoginSuccess = {
+                                    navController.navigate("home") {
+                                        popUpTo("login") { inclusive = true }
+                                    }
+                                },
+                                onNavigateToRegister = {
+                                    navController.navigate("register")
                                 }
-                            }
+                            )
                         }
+
+                        composable("register") {
+                            RegisterScreen(
+                                context = applicationContext,
+                                onRegisterSuccess = {
+                                    navController.navigate("login") {
+                                        popUpTo("register") { inclusive = true }
+                                    }
+                                },
+                                onBackToLogin = {
+                                    navController.navigate("login") {
+                                        popUpTo("register") { inclusive = true }
+                                    }
+                                }
+                            )
+                        }
+
+
 
                         composable("home") {
                             HomeScreen(navController = navController, context = applicationContext)
@@ -38,7 +62,10 @@ class MainActivity : ComponentActivity() {
                             UploadScreen()
                         }
 
-                        // Pasa restricciones como un string separado por comas
+                        composable("restricciones") {
+                            RestriccionesScreen()
+                        }
+
                         composable("history/{restrictions}",
                             arguments = listOf(navArgument("restrictions") { type = NavType.StringType })
                         ) { backStackEntry ->
@@ -47,12 +74,7 @@ class MainActivity : ComponentActivity() {
                             HistoryScreen(navController = navController, selectedRestrictions = selectedRestrictions)
                         }
 
-                        composable("restricciones") {
-                            RestriccionesScreen()
-                        }
-
-                        composable(
-                            "product_detail/{productId}",
+                        composable("product_detail/{productId}",
                             arguments = listOf(navArgument("productId") { type = NavType.IntType })
                         ) { backStackEntry ->
                             val productId = backStackEntry.arguments?.getInt("productId") ?: return@composable
