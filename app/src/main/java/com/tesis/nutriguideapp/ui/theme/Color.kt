@@ -2,10 +2,18 @@ package com.tesis.nutriguideapp.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+// Paleta de colores principal
+val GreenPrimary = Color(0xFF4CAF50)
+val YellowSecondary = Color(0xFFFFC107)
+val WhiteBackground = Color(0xFFFFFFFF)
+val DarkText = Color(0xFF212121)
+val SecondaryText = Color(0xFF757575)
+val BlueAccent = Color(0xFF03A9F4)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+// Colores adicionales para temas
+val GreenLight = Color(0xFF81C784)
+val GreenDark = Color(0xFF388E3C)
+val YellowLight = Color(0xFFFFD54F)
+val YellowDark = Color(0xFFFFA000)
+val Green40 = Color(0xFF4CAF50)
+val Yellow40 = Color(0xFFFFC107)

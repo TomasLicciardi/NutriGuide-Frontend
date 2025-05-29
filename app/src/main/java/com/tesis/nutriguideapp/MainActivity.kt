@@ -9,7 +9,6 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
-import com.tesis.nutriguideapp.screens.HomeScreen
 import com.tesis.nutriguideapp.ui.screens.*
 import com.tesis.nutriguideapp.ui.theme.NutriGuideAppTheme
 
@@ -52,21 +51,54 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
+                        composable("forgot_password") {
+                            ForgotPasswordScreen(
+                                onBackToLogin = {
+                                    navController.navigate("login") {
+                                        popUpTo("forgot_password") { inclusive = true }
+                                    }
+                                },
+                                onResetEmailSent = { token ->
+                                    navController.navigate("reset_password/$token") 
+                                }
+                            )
+                        }
 
+                        composable(
+                            "reset_password/{token}",
+                            arguments = listOf(navArgument("token") { type = NavType.StringType })
+                        ) { backStackEntry ->
+                            val token = backStackEntry.arguments?.getString("token") ?: ""
+                            ResetPasswordScreen(
+                                token = token,
+                                onPasswordReset = {
+                                    navController.navigate("login") {
+                                        popUpTo("reset_password/{token}") { inclusive = true }
+                                    }
+                                }
+                            )
+                        }
 
                         composable("home") {
                             HomeScreen(navController = navController, context = applicationContext)
                         }
+                          composable("upload") {
+                            UploadScreen(navController = navController)
+                        }
 
-                        composable("upload") {
-                            UploadScreen()
+                        composable("camera") {
+                            CameraScreen(navController = navController)
                         }
 
                         composable("restricciones") {
-                            RestriccionesScreen()
+                            RestriccionesScreen(
+                                navController = navController,
+                                context = applicationContext
+                            )
                         }
 
-                        composable("history/{restrictions}",
+                        composable(
+                            "history/{restrictions}",
                             arguments = listOf(navArgument("restrictions") { type = NavType.StringType })
                         ) { backStackEntry ->
                             val restrictions = backStackEntry.arguments?.getString("restrictions") ?: ""
@@ -74,11 +106,22 @@ class MainActivity : ComponentActivity() {
                             HistoryScreen(navController = navController, selectedRestrictions = selectedRestrictions)
                         }
 
-                        composable("product_detail/{productId}",
+                        composable(
+                            "product_detail/{productId}",
                             arguments = listOf(navArgument("productId") { type = NavType.IntType })
                         ) { backStackEntry ->
                             val productId = backStackEntry.arguments?.getInt("productId") ?: return@composable
-                            ProductDetailScreen(productId = productId)
+                            ProductDetailScreen(
+                                productId = productId,
+                                navController = navController
+                            )
+                        }
+
+                        composable("edit_profile") {
+                            EditProfileScreen(
+                                navController = navController,
+                                context = applicationContext
+                            )
                         }
                     }
                 }

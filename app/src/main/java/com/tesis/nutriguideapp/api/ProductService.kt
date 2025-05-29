@@ -2,11 +2,9 @@ package com.tesis.nutriguideapp.api
 
 import com.tesis.nutriguideapp.model.Product
 import okhttp3.MultipartBody
-import retrofit2.http.GET
-import retrofit2.http.Multipart
-import retrofit2.http.POST
-import retrofit2.http.Part
-import retrofit2.http.Path
+import okhttp3.RequestBody
+import retrofit2.Response
+import retrofit2.http.*
 
 interface ProductService {
     @GET("/products/{id}")
@@ -18,11 +16,9 @@ interface ProductService {
     @Multipart
     @POST("/products/")
     suspend fun createProduct(
-        @Part name: MultipartBody.Part,
-        @Part result_json: MultipartBody.Part,
-        @Part history_id: MultipartBody.Part,
-        @Part image: MultipartBody.Part?
-    ): retrofit2.Response<Map<String, Any>>
-
-
+        @Part image: MultipartBody.Part?, // ok
+        @Part("name") name: RequestBody,
+        @Part("result_json") resultJson: RequestBody,
+        @Part("history_id") historyId: RequestBody
+    ): Response<Map<String, Any>> // usa el Response correcto de Retrofit
 }

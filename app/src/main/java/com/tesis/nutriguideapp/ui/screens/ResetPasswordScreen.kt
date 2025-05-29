@@ -1,14 +1,14 @@
 package com.tesis.nutriguideapp.ui.screens
 
-import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,31 +25,41 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tesis.nutriguideapp.ui.theme.GreenPrimary
 import com.tesis.nutriguideapp.ui.theme.WhiteBackground
-import com.tesis.nutriguideapp.ui.theme.YellowSecondary
-import com.tesis.nutriguideapp.viewmodel.RegisterViewModel
+import com.tesis.nutriguideapp.viewmodel.ResetPasswordViewModel
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RegisterScreen(
-    context: Context,
-    onRegisterSuccess: () -> Unit,
-    onBackToLogin: () -> Unit,
-    viewModel: RegisterViewModel = viewModel()
+fun ResetPasswordScreen(
+    token: String,
+    onPasswordReset: () -> Unit,
+    viewModel: ResetPasswordViewModel = viewModel()
 ) {
-    val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
-    val scrollState = rememberScrollState()
+    val coroutineScope = rememberCoroutineScope()
     
-    val username by viewModel.username
-    val email by viewModel.email
-    val password by viewModel.password
+    // Establecer el token en el ViewModel
+    LaunchedEffect(token) {
+        viewModel.setToken(token)
+    }
+    
+    val newPassword by viewModel.newPassword
     val confirmPassword by viewModel.confirmPassword
     val passwordVisible by viewModel.passwordVisible
     val confirmPasswordVisible by viewModel.confirmPasswordVisible
     val loading by viewModel.loading
-    val selectedRestrictions by viewModel.selectedRestrictions
-    val availableRestrictions by viewModel.availableRestrictions
+    val error by viewModel.error
+    val success by viewModel.success
+    
+    // Mostrar mensajes de error o éxito
+    LaunchedEffect(error, success) {
+        error?.let {
+            snackbarHostState.showSnackbar(it)
+        }
+        success?.let {
+            snackbarHostState.showSnackbar(it)
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -59,18 +69,17 @@ fun RegisterScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp)
-                .verticalScroll(scrollState),
+                .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Título
             Text(
-                text = "NUTRIGUIDE",
-                fontSize = 28.sp,
+                text = "RESTABLECER CONTRASEÑA",
+                fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = GreenPrimary,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 32.dp, bottom = 24.dp)
+                modifier = Modifier.padding(vertical = 32.dp)
             )
             
             // Card para el formulario
@@ -92,54 +101,25 @@ fun RegisterScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Crear cuenta",
-                        fontSize = 20.sp,
+                        text = "Crear nueva contraseña",
+                        fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
                     
-                    // Nombre de usuario
-                    OutlinedTextField(
-                        value = username,
-                        onValueChange = { viewModel.onUsernameChange(it) },
-                        label = { Text("Nombre de usuario") },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = "Usuario"
-                            )
-                        },
-                        singleLine = true,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 12.dp)
+                    Text(
+                        text = "Tu contraseña debe tener al menos 6 caracteres y contener letras y números.",
+                        fontSize = 14.sp,
+                        color = Color.Gray,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(bottom = 24.dp)
                     )
                     
-                    // Email
+                    // Nueva contraseña
                     OutlinedTextField(
-                        value = email,
-                        onValueChange = { viewModel.onEmailChange(it) },
-                        label = { Text("Correo electrónico") },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.Email,
-                                contentDescription = "Email"
-                            )
-                        },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 12.dp)
-                    )
-                    
-                    // Contraseña
-                    OutlinedTextField(
-                        value = password,
-                        onValueChange = { viewModel.onPasswordChange(it) },
-                        label = { Text("Contraseña") },
+                        value = newPassword,
+                        onValueChange = { viewModel.onNewPasswordChange(it) },
+                        label = { Text("Nueva contraseña") },
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Default.Lock,
@@ -160,7 +140,7 @@ fun RegisterScreen(
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 12.dp)
+                            .padding(bottom = 16.dp)
                     )
                     
                     // Confirmar contraseña
@@ -188,65 +168,18 @@ fun RegisterScreen(
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 16.dp)
+                            .padding(bottom = 24.dp)
                     )
                     
-                    // Restricciones alimenticias
-                    Text(
-                        text = "Restricciones alimenticias",
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier
-                            .align(Alignment.Start)
-                            .padding(bottom = 8.dp)
-                    )
-                    
-                    // Chips para restricciones
-                    FlowRow(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 16.dp),
-                        maxItemsInEachRow = 3
-                    ) {
-                        availableRestrictions.forEach { restriction ->
-                            val isSelected = selectedRestrictions.contains(restriction)
-                            FilterChip(
-                                selected = isSelected,
-                                onClick = { viewModel.toggleRestriction(restriction) },
-                                label = { Text(restriction) },
-                                leadingIcon = if (isSelected) {
-                                    {
-                                        Icon(
-                                            imageVector = Icons.Default.Check,
-                                            contentDescription = "Selected",
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                } else null,
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = GreenPrimary.copy(alpha = 0.7f),
-                                    selectedLabelColor = Color.White
-                                ),
-                                modifier = Modifier.padding(end = 8.dp, bottom = 8.dp)
-                            )
-                        }
-                    }
-                    
-                    // Botón registrarse
+                    // Botón restablecer
                     Button(
                         onClick = {
-                            viewModel.register(
-                                onSuccess = {
-                                    coroutineScope.launch {
-                                        snackbarHostState.showSnackbar("Registro exitoso")
-                                        onRegisterSuccess()
-                                    }
-                                },
-                                onError = { error ->
-                                    coroutineScope.launch {
-                                        snackbarHostState.showSnackbar(error)
-                                    }
+                            viewModel.resetPassword {
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar("Contraseña restablecida correctamente")
+                                    onPasswordReset()
                                 }
-                            )
+                            }
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -263,19 +196,7 @@ fun RegisterScreen(
                                 modifier = Modifier.size(24.dp)
                             )
                         } else {
-                            Text("REGISTRARSE")
-                        }
-                    }
-                    
-                    // Volver al login
-                    Row(
-                        modifier = Modifier.padding(top = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Text("¿Ya tienes cuenta?")
-                        TextButton(onClick = onBackToLogin) {
-                            Text("Inicia sesión")
+                            Text("RESTABLECER CONTRASEÑA")
                         }
                     }
                 }
