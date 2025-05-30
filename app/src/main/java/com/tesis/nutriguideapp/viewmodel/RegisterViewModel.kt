@@ -70,9 +70,7 @@ class RegisterViewModel : ViewModel() {
         } else {
             _selectedRestrictions.value + restriction
         }
-    }
-
-    fun register(onSuccess: () -> Unit, onError: (String) -> Unit) {
+    }    fun register(onSuccess: () -> Unit, onError: (String) -> Unit) {
         if (_username.value.isBlank() || _email.value.isBlank() || _password.value.isBlank()) {
             onError("Por favor, completa todos los campos obligatorios")
             return
@@ -91,6 +89,7 @@ class RegisterViewModel : ViewModel() {
         _loading.value = true
         viewModelScope.launch {
             try {
+                android.util.Log.d("RegisterViewModel", "Iniciando registro: ${_email.value}")
                 val service = RetrofitInstance.retrofit.create(AuthService::class.java)
                 val request = RegisterRequest(
                     usuario = _username.value,
@@ -98,10 +97,29 @@ class RegisterViewModel : ViewModel() {
                     contrasena = _password.value,
                     restricciones = _selectedRestrictions.value
                 )
-                val response = service.register(request)
-                onSuccess()
+                try {
+                    android.util.Log.d("RegisterViewModel", "Enviando solicitud de registro")
+                    val response = service.register(request)
+                    android.util.Log.d("RegisterViewModel", "Registro exitoso: $response")
+                    
+                    // Esperar un poco antes de navegar
+                    kotlinx.coroutines.delay(500)
+                    onSuccess()
+                } catch (e: retrofit2.HttpException) {
+                    // Captura específicamente errores HTTP
+                    android.util.Log.e("RegisterViewModel", "Error HTTP: ${e.code()}", e)
+                    if (e.code() == 409) {
+                        onError("El correo electrónico ya está registrado. Por favor, usa otro correo.")
+                    } else {
+                        onError("Error del servidor: ${e.message()} (${e.code()})")
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("RegisterViewModel", "Error general en registro", e)
+                    onError("Error: ${e.message ?: "Error al registrar. Inténtalo de nuevo."}")
+                }
             } catch (e: Exception) {
-                onError(e.message ?: "Error al registrar. Inténtalo de nuevo.")
+                android.util.Log.e("RegisterViewModel", "Error de conexión", e)
+                onError("Error de conexión: ${e.message ?: "Verifica tu conexión a internet"}")
             } finally {
                 _loading.value = false
             }

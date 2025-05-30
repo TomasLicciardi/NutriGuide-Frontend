@@ -19,18 +19,25 @@ class MainActivity : ComponentActivity() {
             NutriGuideAppTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     val navController = rememberNavController()
-                    NavHost(navController = navController, startDestination = "login") {
-
-                        composable("login") {
+                    NavHost(navController = navController, startDestination = "login") {                        composable("login") {
                             LoginScreen(
                                 context = applicationContext,
                                 onLoginSuccess = {
-                                    navController.navigate("home") {
-                                        popUpTo("login") { inclusive = true }
+                                    try {
+                                        navController.navigate("home") {
+                                            popUpTo("login") { inclusive = true }
+                                        }
+                                    } catch (e: Exception) {
+                                        android.util.Log.e("MainActivity", "Error navegando desde login: ${e.message}", e)
+                                        // Si la navegación falla, asegurarse de que la app no se cierre
                                     }
                                 },
                                 onNavigateToRegister = {
-                                    navController.navigate("register")
+                                    try {
+                                        navController.navigate("register")
+                                    } catch (e: Exception) {
+                                        android.util.Log.e("MainActivity", "Error navegando a registro: ${e.message}", e)
+                                    }
                                 }
                             )
                         }
@@ -39,8 +46,12 @@ class MainActivity : ComponentActivity() {
                             RegisterScreen(
                                 context = applicationContext,
                                 onRegisterSuccess = {
-                                    navController.navigate("login") {
-                                        popUpTo("register") { inclusive = true }
+                                    try {
+                                        navController.navigate("login") {
+                                            popUpTo("register") { inclusive = true }
+                                        }
+                                    } catch (e: Exception) {
+                                        android.util.Log.e("MainActivity", "Error navegando desde registro: ${e.message}", e)
                                     }
                                 },
                                 onBackToLogin = {

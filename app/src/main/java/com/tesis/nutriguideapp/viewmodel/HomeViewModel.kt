@@ -9,8 +9,12 @@ import com.tesis.nutriguideapp.api.UserService
 import com.tesis.nutriguideapp.api.RetrofitInstance
 import com.tesis.nutriguideapp.utils.TokenManager
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import retrofit2.HttpException
+import java.io.IOException
 
 class HomeViewModel : ViewModel() {
+
     private val _loading = mutableStateOf(false)
     val loading: State<Boolean> = _loading
 
@@ -24,15 +28,43 @@ class HomeViewModel : ViewModel() {
         _loading.value = true
         viewModelScope.launch {
             try {
+                android.util.Log.d("HomeViewModel", "Obteniendo perfil de usuario")
                 val service = RetrofitInstance.getAuthenticatedRetrofit(context).create(UserService::class.java)
-                val profile = service.getUserProfile()
-                _username.value = profile.username
-                
-                // Obtenemos también las restricciones
-                val restrictions = service.getUserRestrictions()
-                _userRestrictions.value = restrictions
+
+                try {
+                    android.util.Log.d("HomeViewModel", "Consultando datos de perfil")
+                    val profile = service.getUserProfile()
+                    _username.value = profile.username
+                    android.util.Log.d("HomeViewModel", "Perfil obtenido: ${profile.username}")
+
+                    // Obtener también las restricciones
+                    android.util.Log.d("HomeViewModel", "Consultando restricciones del usuario")
+                    try {
+                        val restrictions = service.getUserRestrictions()
+                        _userRestrictions.value = restrictions ?: emptyList()
+                        android.util.Log.d("HomeViewModel", "Restricciones obtenidas: ${restrictions?.size ?: 0}")
+                    } catch (e: HttpException) {
+                        android.util.Log.e("HomeViewModel", "Error HTTP al obtener restricciones: ${e.code()}", e)
+                        _userRestrictions.value = emptyList()
+                    } catch (e: IOException) {
+                        android.util.Log.e("HomeViewModel", "Error de red al obtener restricciones", e)
+                        _userRestrictions.value = emptyList()
+                    } catch (e: Exception) {
+                        android.util.Log.e("HomeViewModel", "Error general al obtener restricciones", e)
+                        _userRestrictions.value = emptyList()
+                    }
+                } catch (e: HttpException) {
+                    android.util.Log.e("HomeViewModel", "Error HTTP al obtener perfil: ${e.code()}", e)
+                    if (e.code() == 401) {
+                        // Token expirado o inválido, limpiar y redirigir a login
+                        android.util.Log.w("HomeViewModel", "Token inválido, se limpiará la sesión")
+                        TokenManager(context).clearToken()
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("HomeViewModel", "Error general al obtener perfil", e)
+                }
             } catch (e: Exception) {
-                // Manejar error
+                android.util.Log.e("HomeViewModel", "Error de conexión al obtener perfil", e)
             } finally {
                 _loading.value = false
             }
@@ -40,7 +72,22 @@ class HomeViewModel : ViewModel() {
     }
 
     fun logout(context: Context, onLogoutSuccess: () -> Unit) {
-        TokenManager(context).clearToken()
-        onLogoutSuccess()
+        try {
+            android.util.Log.d("HomeViewModel", "Iniciando proceso de logout")
+            TokenManager(context).clearToken()
+            android.util.Log.d("HomeViewModel", "Token limpiado correctamente")
+
+            viewModelScope.launch {
+                try {
+                    delay(300)
+                    android.util.Log.d("HomeViewModel", "Llamando al callback de éxito del logout")
+                    onLogoutSuccess()
+                } catch (e: Exception) {
+                    android.util.Log.e("HomeViewModel", "Error en callback de logout", e)
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("HomeViewModel", "Error al limpiar token", e)
+        }
     }
 }

@@ -1,7 +1,6 @@
 package com.tesis.nutriguideapp.ui.screens
 
 import android.content.Context
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,8 +16,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -27,13 +24,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.tesis.nutriguideapp.R
-import com.tesis.nutriguideapp.api.AuthService
-import com.tesis.nutriguideapp.api.RetrofitInstance
-import com.tesis.nutriguideapp.model.AuthRequest
 import com.tesis.nutriguideapp.ui.theme.GreenPrimary
 import com.tesis.nutriguideapp.ui.theme.WhiteBackground
-import com.tesis.nutriguideapp.utils.TokenManager
 import com.tesis.nutriguideapp.viewmodel.LoginViewModel
 import kotlinx.coroutines.launch
 
@@ -42,15 +34,16 @@ import kotlinx.coroutines.launch
 fun LoginScreen(
     context: Context,
     onLoginSuccess: () -> Unit,
-    onNavigateToRegister: () -> Unit
+    onNavigateToRegister: () -> Unit,
+    viewModel: LoginViewModel = viewModel()
 ) {
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
-    
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var loading by remember { mutableStateOf(false) }
-    var passwordVisible by remember { mutableStateOf(false) }
+
+    val email by viewModel.email
+    val password by viewModel.password
+    val loading by viewModel.loading
+    val passwordVisible by viewModel.passwordVisible
 
     Box(
         modifier = Modifier
@@ -64,15 +57,6 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Logo - Comentado hasta que tengas un logo
-            /* Image(
-                painter = painterResource(id = R.drawable.logo),
-                contentDescription = "Logo NutriGuide",
-                modifier = Modifier
-                    .size(150.dp)
-                    .padding(bottom = 32.dp)
-            ) */
-            
             // Título
             Text(
                 text = "NUTRIGUIDE",
@@ -82,18 +66,14 @@ fun LoginScreen(
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(bottom = 32.dp)
             )
-            
+
             // Card para el formulario
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp)),
-                colors = CardDefaults.cardColors(
-                    containerColor = WhiteBackground
-                ),
-                elevation = CardDefaults.cardElevation(
-                    defaultElevation = 4.dp
-                )
+                colors = CardDefaults.cardColors(containerColor = WhiteBackground),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
                 Column(
                     modifier = Modifier
@@ -107,11 +87,11 @@ fun LoginScreen(
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
-                    
+
                     // Email
                     OutlinedTextField(
                         value = email,
-                        onValueChange = { email = it },
+                        onValueChange = { viewModel.onEmailChange(it) },
                         label = { Text("Correo electrónico") },
                         leadingIcon = {
                             Icon(
@@ -126,19 +106,20 @@ fun LoginScreen(
                             .fillMaxWidth()
                             .padding(bottom = 16.dp)
                     )
-                    
+
                     // Contraseña
                     OutlinedTextField(
                         value = password,
-                        onValueChange = { password = it },
+                        onValueChange = { viewModel.onPasswordChange(it) },
                         label = { Text("Contraseña") },
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Default.Lock,
                                 contentDescription = "Password"
                             )
-                        },trailingIcon = {
-                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        },
+                        trailingIcon = {
+                            IconButton(onClick = { viewModel.togglePasswordVisibility() }) {
                                 Icon(
                                     imageVector = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
                                     contentDescription = if (passwordVisible) "Ocultar contraseña" else "Mostrar contraseña"
@@ -153,51 +134,83 @@ fun LoginScreen(
                             .fillMaxWidth()
                             .padding(bottom = 24.dp)
                     )
-                    
+
                     // Botón login
                     Button(
                         onClick = {
-                            loading = true
-                            coroutineScope.launch {
-                                try {
-                                    val service = RetrofitInstance.retrofit.create(AuthService::class.java)
-                                    val response = service.login(AuthRequest(email, password))
-                                    TokenManager(context).saveToken(response.accessToken)
-                                    onLoginSuccess()
-                                } catch (e: Exception) {
-                                    snackbarHostState.showSnackbar("Error al iniciar sesión: ${e.message ?: "Verifica tus credenciales"}")
-                                } finally {
-                                    loading = false
+                            viewModel.login(
+                                context = context,
+                                onSuccess = {
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar("Login exitoso")
+                                        kotlinx.coroutines.delay(300)
+                                        onLoginSuccess()
+                                    }
+                                },
+                                onError = { error ->
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar(error)
+                                    }
                                 }
-                            }
+                            )
                         },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),
                         enabled = !loading,
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = GreenPrimary
-                        )
-                    ) {
+                        colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)                    ) {
                         if (loading) {
-                            CircularProgressIndicator(
-                                color = Color.White,
-                                modifier = Modifier.size(24.dp)
-                            )
+                            // Usar un enfoque alternativo sin CircularProgressIndicator
+                            Box(
+                                modifier = Modifier.size(24.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "...",
+                                    color = Color.White,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         } else {
                             Text("INICIAR SESIÓN")
                         }
                     }
-                    
+
                     // Recuperar contraseña
                     TextButton(
-                        onClick = { /* TODO: Navegar a recuperar contraseña */ },
+                        onClick = {
+                            // TODO: Navegar a recuperar contraseña
+                        },
                         modifier = Modifier.padding(top = 8.dp)
                     ) {
                         Text("¿Olvidaste tu contraseña?")
+                    }                    // Botón para probar la conexión
+                    OutlinedButton(
+                        onClick = {
+                            if (!loading) {
+                                viewModel.testConnection(context) { success, message ->
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar(
+                                            message = message,
+                                            duration = SnackbarDuration.Long
+                                        )
+                                    }
+                                }
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
+                        enabled = !loading,
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = GreenPrimary
+                        )
+                    ) {
+                        Text("Probar conexión con el servidor")
                     }
-                    
+
                     // Registro
                     Row(
                         modifier = Modifier.padding(top = 16.dp),
@@ -205,15 +218,15 @@ fun LoginScreen(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Text("¿No tienes cuenta?")
-                        TextButton(onClick = onNavigateToRegister) {
+                        TextButton(onClick = { onNavigateToRegister() }) {
                             Text("Regístrate")
                         }
                     }
                 }
             }
         }
-        
-        // Snackbar para mensajes de error
+
+        // Snackbar para errores y confirmaciones
         SnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier

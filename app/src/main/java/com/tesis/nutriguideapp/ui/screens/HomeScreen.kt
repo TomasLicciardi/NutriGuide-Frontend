@@ -1,7 +1,6 @@
 package com.tesis.nutriguideapp.ui.screens
 
 import android.content.Context
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -30,11 +29,13 @@ import com.tesis.nutriguideapp.ui.theme.WhiteBackground
 import com.tesis.nutriguideapp.ui.theme.YellowSecondary
 import com.tesis.nutriguideapp.utils.TokenManager
 import com.tesis.nutriguideapp.viewmodel.HomeViewModel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    navController: NavController, 
+    navController: NavController,
     context: Context,
     viewModel: HomeViewModel = viewModel()
 ) {
@@ -44,13 +45,36 @@ fun HomeScreen(
     val loading by viewModel.loading
     val userRestrictions by viewModel.userRestrictions
 
-    LaunchedEffect(Unit) {
-        if (token == null) {
-            navController.navigate("login") {
-                popUpTo("home") { inclusive = true }
+    LaunchedEffect(key1 = Unit) {
+        try {
+            if (token == null) {
+                try {
+                    android.util.Log.d("HomeScreen", "Token nulo, navegando a login")
+                    delay(100) // Pequeña pausa antes de navegar
+                    navController.navigate("login") {
+                        popUpTo("home") { inclusive = true }
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e(
+                        "HomeScreen",
+                        "Error al navegar a login por token nulo: ${e.message}",
+                        e
+                    )
+                }
+            } else {
+                try {
+                    android.util.Log.d("HomeScreen", "Token válido, obteniendo perfil de usuario")
+                    viewModel.getUserProfile(context)
+                } catch (e: Exception) {
+                    android.util.Log.e(
+                        "HomeScreen",
+                        "Error al obtener perfil de usuario: ${e.message}",
+                        e
+                    )
+                }
             }
-        } else {
-            viewModel.getUserProfile(context)
+        } catch (e: Exception) {
+            android.util.Log.e("HomeScreen", "Error general en LaunchedEffect: ${e.message}", e)
         }
     }
 
@@ -74,7 +98,7 @@ fun HomeScreen(
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
-            
+
             // Bienvenida personalizada
             Text(
                 text = if (username.isNotEmpty()) "¡Hola, $username!" else "¡Bienvenido!",
@@ -83,15 +107,24 @@ fun HomeScreen(
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(bottom = 32.dp)
             )
-              // Tarjetas de opciones
+
+            // Tarjeta Analizar Producto
             HomeCard(
                 title = "Analizar Producto",
                 description = "Sube una foto de la etiqueta de un producto para analizarlo",
                 icon = Icons.Default.Camera,
                 backgroundColor = GreenPrimary,
-                onClick = { navController.navigate("upload") }
+                onClick = {
+                    try {
+                        android.util.Log.d("HomeScreen", "Navegando a pantalla de upload")
+                        navController.navigate("upload")
+                    } catch (e: Exception) {
+                        android.util.Log.e("HomeScreen", "Error al navegar a upload: ${e.message}", e)
+                    }
+                }
             )
 
+            // Captura directa con cámara
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -99,7 +132,14 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.Center
             ) {
                 FloatingActionButton(
-                    onClick = { navController.navigate("camera") },
+                    onClick = {
+                        try {
+                            android.util.Log.d("HomeScreen", "Navegando a pantalla de cámara")
+                            navController.navigate("camera")
+                        } catch (e: Exception) {
+                            android.util.Log.e("HomeScreen", "Error al navegar a cámara: ${e.message}", e)
+                        }
+                    },
                     containerColor = GreenPrimary,
                     contentColor = Color.White,
                     modifier = Modifier.padding(8.dp)
@@ -118,35 +158,80 @@ fun HomeScreen(
                         .padding(start = 8.dp)
                 )
             }
-            
+
+            // Tarjeta Historial
             HomeCard(
                 title = "Ver Historial",
                 description = "Revisa los productos que has analizado anteriormente",
                 icon = Icons.Default.History,
                 backgroundColor = YellowSecondary,
                 onClick = {
-                    val restrictionsParam = userRestrictions.joinToString(",")
-                    navController.navigate("history/$restrictionsParam")
+                    try {
+                        android.util.Log.d("HomeScreen", "Navegando a pantalla de historial")
+                        val restrictionsList: List<String> = userRestrictions ?: emptyList()
+                        val restrictionsParam = restrictionsList.joinToString(",")
+                        navController.navigate("history/$restrictionsParam")
+                    } catch (e: Exception) {
+                        android.util.Log.e(
+                            "HomeScreen",
+                            "Error al navegar a historial: ${e.message}",
+                            e
+                        )
+                    }
                 }
             )
-            
+
+            // Tarjeta Configurar Restricciones
             HomeCard(
                 title = "Configurar Restricciones",
                 description = "Establece tus restricciones alimenticias",
                 icon = Icons.Default.Settings,
                 backgroundColor = BlueAccent,
-                onClick = { navController.navigate("restricciones") }
+                onClick = {
+                    try {
+                        android.util.Log.d("HomeScreen", "Navegando a pantalla de restricciones")
+                        navController.navigate("restricciones")
+                    } catch (e: Exception) {
+                        android.util.Log.e(
+                            "HomeScreen",
+                            "Error al navegar a restricciones: ${e.message}",
+                            e
+                        )
+                    }
+                }
             )
-            
+
+            // Espacio para empujar el botón de logout al fondo
             Spacer(modifier = Modifier.weight(1f))
-            
+
             // Botón de cerrar sesión
             Button(
                 onClick = {
-                    viewModel.logout(context) {
-                        navController.navigate("login") {
-                            popUpTo("home") { inclusive = true }
+                    try {
+                        android.util.Log.d("HomeScreen", "Iniciando logout")
+                        viewModel.logout(context) {
+                            try {
+                                android.util.Log.d(
+                                    "HomeScreen",
+                                    "Logout exitoso, navegando a login"
+                                )
+                                navController.navigate("login") {
+                                    popUpTo("home") { inclusive = true }
+                                }
+                            } catch (e: Exception) {
+                                android.util.Log.e(
+                                    "HomeScreen",
+                                    "Error al navegar después del logout: ${e.message}",
+                                    e
+                                )
+                            }
                         }
+                    } catch (e: Exception) {
+                        android.util.Log.e(
+                            "HomeScreen",
+                            "Error al realizar logout: ${e.message}",
+                            e
+                        )
                     }
                 },
                 colors = ButtonDefaults.buttonColors(
@@ -165,7 +250,7 @@ fun HomeScreen(
                 Text("CERRAR SESIÓN")
             }
         }
-        
+
         if (loading) {
             CircularProgressIndicator(
                 modifier = Modifier.align(Alignment.Center),
@@ -202,7 +287,6 @@ fun HomeCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Icono en círculo
             Box(
                 modifier = Modifier
                     .size(56.dp)
@@ -217,8 +301,7 @@ fun HomeCard(
                     modifier = Modifier.size(28.dp)
                 )
             }
-            
-            // Texto
+
             Column(
                 modifier = Modifier
                     .padding(start = 16.dp)

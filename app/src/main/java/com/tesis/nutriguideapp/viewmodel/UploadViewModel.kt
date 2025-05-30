@@ -59,11 +59,15 @@ class UploadViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 // Preparar la imagen para enviar
+                android.util.Log.d("UploadViewModel", "Preparando imagen para análisis")
                 val file = prepareImageFile(context, uri)
+                android.util.Log.d("UploadViewModel", "Imagen preparada: ${file.length()} bytes")
+                
                 val requestFile = file.asRequestBody("image/jpeg".toMediaTypeOrNull())
                 val imagePart = MultipartBody.Part.createFormData("image", file.name, requestFile)
 
                 // Llamada al API para análisis
+                android.util.Log.d("UploadViewModel", "Iniciando petición de análisis")
                 val service = RetrofitInstance.getAuthenticatedRetrofit(context)
                     .create(AnalysisService::class.java)
                 val response = service.analyzeImage(imagePart)
@@ -75,10 +79,18 @@ class UploadViewModel : ViewModel() {
                         _productName.value = response.body()?.textDetected?.lines()?.firstOrNull() ?: ""
                     }
                 } else {
-                    _error.value = "Error al analizar la imagen: ${response.message()}"
+                    _error.value = "Error al analizar la imagen: ${response.code()} - ${response.message()}"
+                    android.util.Log.e("UploadViewModel", "Error HTTP al analizar imagen: ${response.code()} - ${response.message()}")
                 }
+            } catch (e: java.net.SocketTimeoutException) {
+                _error.value = "Tiempo de espera agotado. La petición tardó demasiado en completarse."
+                android.util.Log.e("UploadViewModel", "Timeout al analizar imagen", e)
+            } catch (e: java.io.IOException) {
+                _error.value = "Error de conexión: ${e.message ?: "Verifica tu conexión a internet"}"
+                android.util.Log.e("UploadViewModel", "Error de IO al analizar imagen", e)
             } catch (e: Exception) {
-                _error.value = "Error: ${e.message}"
+                _error.value = "Error inesperado: ${e.message}"
+                android.util.Log.e("UploadViewModel", "Error general al analizar imagen", e)
             } finally {
                 _analyzing.value = false
             }
@@ -107,18 +119,25 @@ class UploadViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 // Preparar la imagen para enviar
+                android.util.Log.d("UploadViewModel", "Preparando imagen para subir")
                 val file = prepareImageFile(context, uri)
+                android.util.Log.d("UploadViewModel", "Imagen preparada para subir: ${file.length()} bytes")
+                
                 val requestFile = file.asRequestBody("image/jpeg".toMediaTypeOrNull())
                 val imagePart = MultipartBody.Part.createFormData("image", file.name, requestFile)
 
                 // Convertir el análisis a JSON
                 val gson = com.google.gson.Gson()
-                val resultJson = gson.toJson(analysis)                // Preparar los datos del producto
+                val resultJson = gson.toJson(analysis)
+                android.util.Log.d("UploadViewModel", "JSON generado: ${resultJson.take(100)}...")
+                
+                // Preparar los datos del producto
                 val nameBody = _productName.value.toRequestBody("text/plain".toMediaTypeOrNull())
                 val jsonBody = resultJson.toRequestBody("text/plain".toMediaTypeOrNull())
                 val historyIdBody = "1".toRequestBody("text/plain".toMediaTypeOrNull()) // Por ahora es estático
 
                 // Llamada al API para subir el producto
+                android.util.Log.d("UploadViewModel", "Iniciando petición para subir producto")
                 val service = RetrofitInstance.getAuthenticatedRetrofit(context)
                     .create(ProductService::class.java)
                 val response = service.createProduct(imagePart, nameBody, jsonBody, historyIdBody)
@@ -127,21 +146,39 @@ class UploadViewModel : ViewModel() {
                     onSuccess()
                     resetForm()
                 } else {
-                    _error.value = "Error al subir el producto: ${response.message()}"
+                    _error.value = "Error al subir el producto: ${response.code()} - ${response.message()}"
+                    android.util.Log.e("UploadViewModel", "Error HTTP al subir producto: ${response.code()} - ${response.message()}")
                 }
+            } catch (e: java.net.SocketTimeoutException) {
+                _error.value = "Tiempo de espera agotado. La petición tardó demasiado en completarse."
+                android.util.Log.e("UploadViewModel", "Timeout al subir producto", e)
+            } catch (e: java.io.IOException) {
+                _error.value = "Error de conexión: ${e.message ?: "Verifica tu conexión a internet"}"
+                android.util.Log.e("UploadViewModel", "Error de IO al subir producto", e)
             } catch (e: Exception) {
-                _error.value = "Error: ${e.message}"
+                _error.value = "Error inesperado: ${e.message}"
+                android.util.Log.e("UploadViewModel", "Error general al subir producto", e)
             } finally {
                 _uploading.value = false
             }
         }
-    }
-
-    private fun prepareImageFile(context: Context, uri: Uri): File {
+    }    private fun prepareImageFile(context: Context, uri: Uri): File {
+        // Intentar optimizar la imagen primero
+        val optimizedFile = com.tesis.nutriguideapp.utils.ImageOptimizer.optimizeImage(context, uri)
+        
+        // Si la optimización fue exitosa, usar el archivo optimizado
+        if (optimizedFile != null) {
+            android.util.Log.d("UploadViewModel", "Imagen optimizada: ${optimizedFile.length() / 1024} KB")
+            return optimizedFile
+        }
+        
+        // Si la optimización falló, usar el método original
+        android.util.Log.d("UploadViewModel", "La optimización falló, usando el método original")
         val contentResolver = context.contentResolver
         val inputStream = contentResolver.openInputStream(uri)
         val file = File(context.cacheDir, UUID.randomUUID().toString() + ".jpg")
         file.outputStream().use { inputStream?.copyTo(it) }
+        android.util.Log.d("UploadViewModel", "Imagen original: ${file.length() / 1024} KB")
         return file
     }
 

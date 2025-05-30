@@ -23,9 +23,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.tesis.nutriguideapp.ui.theme.GreenPrimary
 import com.tesis.nutriguideapp.ui.theme.WhiteBackground
-import com.tesis.nutriguideapp.ui.theme.YellowSecondary
 import com.tesis.nutriguideapp.viewmodel.RestriccionesViewModel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,25 +37,46 @@ fun RestriccionesScreen(
     val scrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
-    
+
     val userRestrictions by viewModel.userRestrictions
     val availableRestrictions by viewModel.availableRestrictions
     val loading by viewModel.loading
     val error by viewModel.error
     val success by viewModel.success
-    
+
     // Cargar restricciones al iniciar
-    LaunchedEffect(Unit) {
-        viewModel.getUserRestrictions(context)
-    }
-    
-    // Mostrar mensajes de error o éxito
-    LaunchedEffect(error, success) {
-        error?.let {
-            snackbarHostState.showSnackbar(it)
+    LaunchedEffect(key1 = Unit) {
+        try {
+            android.util.Log.d("RestriccionesScreen", "Cargando restricciones del usuario")
+            viewModel.getUserRestrictions(context)
+        } catch (e: Exception) {
+            android.util.Log.e("RestriccionesScreen", "Error al cargar restricciones: ${e.message}", e)
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar("Error al cargar restricciones: ${e.message}")
+            }
         }
-        success?.let {
-            snackbarHostState.showSnackbar(it)
+    }
+
+    // Mostrar mensajes de error o éxito
+    LaunchedEffect(key1 = error, key2 = success) {
+        try {
+            error?.let {
+                android.util.Log.d("RestriccionesScreen", "Mostrando error: $it")
+                snackbarHostState.showSnackbar(it)
+            }
+
+            success?.let {
+                android.util.Log.d("RestriccionesScreen", "Mostrando mensaje de éxito: $it")
+                snackbarHostState.showSnackbar(it)
+                delay(500)
+                try {
+                    navController.popBackStack()
+                } catch (e: Exception) {
+                    android.util.Log.e("RestriccionesScreen", "Error al navegar después de guardar: ${e.message}", e)
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("RestriccionesScreen", "Error en LaunchedEffect de mensajes: ${e.message}", e)
         }
     }
 
@@ -84,7 +105,7 @@ fun RestriccionesScreen(
                         tint = GreenPrimary
                     )
                 }
-                
+
                 Text(
                     text = "RESTRICCIONES ALIMENTICIAS",
                     fontSize = 22.sp,
@@ -94,19 +115,15 @@ fun RestriccionesScreen(
                     modifier = Modifier.weight(1f)
                 )
             }
-            
+
             // Tarjeta con las restricciones
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 16.dp),
                 shape = RoundedCornerShape(16.dp),
-                elevation = CardDefaults.cardElevation(
-                    defaultElevation = 4.dp
-                ),
-                colors = CardDefaults.cardColors(
-                    containerColor = WhiteBackground
-                )
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                colors = CardDefaults.cardColors(containerColor = WhiteBackground)
             ) {
                 Column(
                     modifier = Modifier
@@ -119,18 +136,18 @@ fun RestriccionesScreen(
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
-                    
+
                     Text(
                         text = "Estas restricciones se usarán para analizar si los productos son aptos para ti.",
                         fontSize = 14.sp,
                         color = Color.Gray,
                         modifier = Modifier.padding(bottom = 24.dp)
                     )
-                    
+
                     // Lista de restricciones disponibles
                     availableRestrictions.forEach { restriction ->
                         val isSelected = userRestrictions.contains(restriction)
-                        
+
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -145,14 +162,14 @@ fun RestriccionesScreen(
                                     uncheckedColor = Color.Gray
                                 )
                             )
-                            
+
                             Text(
                                 text = restriction,
                                 modifier = Modifier
                                     .weight(1f)
                                     .padding(start = 8.dp)
                             )
-                            
+
                             if (isSelected) {
                                 Icon(
                                     imageVector = Icons.Default.Check,
@@ -162,12 +179,12 @@ fun RestriccionesScreen(
                                 )
                             }
                         }
-                        
+
                         Divider(modifier = Modifier.padding(start = 48.dp))
                     }
                 }
             }
-            
+
             // Resumen de restricciones seleccionadas
             if (userRestrictions.isNotEmpty()) {
                 Card(
@@ -191,7 +208,7 @@ fun RestriccionesScreen(
                             color = GreenPrimary,
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
-                        
+
                         Text(
                             text = userRestrictions.joinToString(", "),
                             fontSize = 14.sp
@@ -199,12 +216,11 @@ fun RestriccionesScreen(
                     }
                 }
             }
-            
+
             // Botón guardar
             Button(
                 onClick = {
                     viewModel.saveRestrictions(context) {
-                        // Navegar de regreso o mostrar éxito
                         coroutineScope.launch {
                             snackbarHostState.showSnackbar("Restricciones guardadas correctamente")
                         }
@@ -234,7 +250,7 @@ fun RestriccionesScreen(
                 }
             }
         }
-        
+
         // Snackbar para mensajes
         SnackbarHost(
             hostState = snackbarHostState,

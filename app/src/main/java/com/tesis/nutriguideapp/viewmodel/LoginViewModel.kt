@@ -34,9 +34,7 @@ class LoginViewModel : ViewModel() {
 
     fun togglePasswordVisibility() {
         _passwordVisible.value = !_passwordVisible.value
-    }
-
-    fun login(context: Context, onSuccess: () -> Unit, onError: (String) -> Unit) {
+    }    fun login(context: Context, onSuccess: () -> Unit, onError: (String) -> Unit) {
         if (_email.value.isBlank() || _password.value.isBlank()) {
             onError("Por favor, completa todos los campos")
             return
@@ -45,12 +43,59 @@ class LoginViewModel : ViewModel() {
         _loading.value = true
         viewModelScope.launch {
             try {
+                android.util.Log.d("LoginViewModel", "Iniciando login: ${_email.value}")
                 val service = RetrofitInstance.retrofit.create(AuthService::class.java)
-                val response = service.login(AuthRequest(_email.value, _password.value))
-                TokenManager(context).saveToken(response.accessToken)
-                onSuccess()
+                
+                try {
+                    android.util.Log.d("LoginViewModel", "Enviando solicitud de login")
+                    val response = service.login(AuthRequest(_email.value, _password.value))
+                    android.util.Log.d("LoginViewModel", "Login exitoso: ${response.accessToken.take(10)}...")
+                    
+                    // Guardar token
+                    TokenManager(context).saveToken(response.accessToken)
+                    
+                    // Pequeña pausa antes de navegar
+                    kotlinx.coroutines.delay(500)
+                    
+                    // Llamar al callback de éxito
+                    onSuccess()                } catch (e: retrofit2.HttpException) {
+                    android.util.Log.e("LoginViewModel", "Error HTTP en login: ${e.code()}", e)
+                    if (e.code() == 401) {
+                        onError("Credenciales incorrectas. Verifica tu correo y contraseña.")
+                    } else {
+                        onError("Error del servidor: ${e.message()} (${e.code()})")
+                    }
+                } catch (e: java.net.SocketTimeoutException) {
+                    android.util.Log.e("LoginViewModel", "Timeout en login", e)
+                    onError("Tiempo de espera agotado. Inténtalo de nuevo más tarde.")
+                } catch (e: java.io.IOException) {
+                    android.util.Log.e("LoginViewModel", "Error de IO en login", e)
+                    onError("Error de conexión: ${e.message ?: "Verifica tu conexión a internet"}")
+                } catch (e: Exception) {
+                    android.util.Log.e("LoginViewModel", "Error general en login", e)
+                    onError("Error: ${e.message ?: "Error al iniciar sesión. Verifica tus credenciales."}")
+                }
             } catch (e: Exception) {
-                onError(e.message ?: "Error al iniciar sesión. Verifica tus credenciales.")
+                android.util.Log.e("LoginViewModel", "Error de conexión en login", e)
+                onError("Error de conexión: ${e.message ?: "Verifica tu conexión a internet"}")
+            } finally {
+                _loading.value = false
+            }
+        }    }
+    
+    // Método para probar la conexión con el backend
+    fun testConnection(context: Context, onResult: (Boolean, String) -> Unit) {
+        _loading.value = true
+        viewModelScope.launch {
+            try {
+                com.tesis.nutriguideapp.utils.ConnectionTester.testBackendConnection(
+                    context,
+                    false, // No mostrar Toast
+                    onResult // Pasar el callback de resultado
+                )
+            } catch (e: Exception) {
+                android.util.Log.e("LoginViewModel", "Error al probar conexión", e)
+                onResult(false, "Error al probar conexión: ${e.message}")
             } finally {
                 _loading.value = false
             }

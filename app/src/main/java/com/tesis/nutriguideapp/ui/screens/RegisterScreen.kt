@@ -230,20 +230,42 @@ fun RegisterScreen(
                             )
                         }
                     }
-                    
-                    // Botón registrarse
+                      // Botón registrarse
                     Button(
                         onClick = {
                             viewModel.register(
                                 onSuccess = {
                                     coroutineScope.launch {
-                                        snackbarHostState.showSnackbar("Registro exitoso")
-                                        onRegisterSuccess()
+                                        try {
+                                            android.util.Log.d("RegisterScreen", "Registro exitoso, mostrando Snackbar")
+                                            snackbarHostState.showSnackbar("Registro exitoso")
+                                            
+                                            // Pequeña pausa adicional antes de navegar
+                                            kotlinx.coroutines.delay(300)
+                                            
+                                            android.util.Log.d("RegisterScreen", "Intentando navegar después del registro exitoso")
+                                            try {
+                                                onRegisterSuccess()
+                                                android.util.Log.d("RegisterScreen", "Navegación después del registro completada con éxito")
+                                            } catch (e: Exception) {
+                                                android.util.Log.e("RegisterScreen", "Error al navegar después del registro: ${e.message}", e)
+                                                snackbarHostState.showSnackbar("Error al navegar: ${e.message}")
+                                            }
+                                        } catch (e: Exception) {
+                                            android.util.Log.e("RegisterScreen", "Error general en proceso post-registro: ${e.message}", e)
+                                            snackbarHostState.showSnackbar("Error: ${e.message}")
+                                        }
                                     }
                                 },
                                 onError = { error ->
                                     coroutineScope.launch {
-                                        snackbarHostState.showSnackbar(error)
+                                        android.util.Log.e("RegisterScreen", "Error en registro: $error")
+                                        // Mejora el mensaje para el error 409
+                                        if (error.contains("409") || error.contains("conflict", ignoreCase = true) || error.contains("ya está registrado", ignoreCase = true)) {
+                                            snackbarHostState.showSnackbar("El correo electrónico ya está registrado. Intenta con otro.")
+                                        } else {
+                                            snackbarHostState.showSnackbar(error)
+                                        }
                                     }
                                 }
                             )
@@ -266,15 +288,25 @@ fun RegisterScreen(
                             Text("REGISTRARSE")
                         }
                     }
-                    
-                    // Volver al login
+                      // Volver al login
                     Row(
                         modifier = Modifier.padding(top = 16.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Text("¿Ya tienes cuenta?")
-                        TextButton(onClick = onBackToLogin) {
+                        TextButton(onClick = { 
+                            try {
+                                android.util.Log.d("RegisterScreen", "Intentando navegar de vuelta a la pantalla de login")
+                                onBackToLogin()
+                                android.util.Log.d("RegisterScreen", "Navegación de vuelta a login completada con éxito")
+                            } catch (e: Exception) {
+                                android.util.Log.e("RegisterScreen", "Error al navegar de vuelta a login: ${e.message}", e)
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar("Error al navegar: ${e.message}")
+                                }
+                            }
+                        }) {
                             Text("Inicia sesión")
                         }
                     }
