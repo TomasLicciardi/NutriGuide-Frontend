@@ -114,7 +114,10 @@ class MainActivity : ComponentActivity() {
                         ) { backStackEntry ->
                             val restrictions = backStackEntry.arguments?.getString("restrictions") ?: ""
                             val selectedRestrictions = restrictions.split(",").filter { it.isNotBlank() }.toSet()
-                            HistoryScreen(navController = navController, selectedRestrictions = selectedRestrictions)
+                            HistoryScreen(
+                                navController = navController,
+                                selectedRestrictions = selectedRestrictions
+                            )
                         }
 
                         composable(
@@ -125,6 +128,12 @@ class MainActivity : ComponentActivity() {
                             ProductDetailScreen(
                                 productId = productId,
                                 navController = navController
+                            )                        }
+
+                        composable("profile") {
+                            ProfileScreen(
+                                navController = navController,
+                                context = applicationContext
                             )
                         }
 

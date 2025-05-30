@@ -61,7 +61,7 @@ class LoginViewModel : ViewModel() {
                     onSuccess()                } catch (e: retrofit2.HttpException) {
                     android.util.Log.e("LoginViewModel", "Error HTTP en login: ${e.code()}", e)
                     if (e.code() == 401) {
-                        onError("Credenciales incorrectas. Verifica tu correo y contraseña.")
+                        onError("Email o contraseña incorrectos. Por favor, verifica tus datos.")
                     } else {
                         onError("Error del servidor: ${e.message()} (${e.code()})")
                     }
@@ -73,7 +73,7 @@ class LoginViewModel : ViewModel() {
                     onError("Error de conexión: ${e.message ?: "Verifica tu conexión a internet"}")
                 } catch (e: Exception) {
                     android.util.Log.e("LoginViewModel", "Error general en login", e)
-                    onError("Error: ${e.message ?: "Error al iniciar sesión. Verifica tus credenciales."}")
+                    onError("Email o contraseña incorrectos. Verifica tus credenciales.")
                 }
             } catch (e: Exception) {
                 android.util.Log.e("LoginViewModel", "Error de conexión en login", e)

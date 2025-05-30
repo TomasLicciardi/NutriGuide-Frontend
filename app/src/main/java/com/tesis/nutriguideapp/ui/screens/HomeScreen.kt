@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Camera
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -178,28 +179,26 @@ fun HomeScreen(
                             e
                         )
                     }
-                }
-            )
+                }            )
 
-            // Tarjeta Configurar Restricciones
+            // Tarjeta Mi Perfil
             HomeCard(
-                title = "Configurar Restricciones",
-                description = "Establece tus restricciones alimenticias",
-                icon = Icons.Default.Settings,
-                backgroundColor = BlueAccent,
+                title = "Mi Perfil",
+                description = "Ver y editar información personal",
+                icon = Icons.Default.Person,
+                backgroundColor = androidx.compose.ui.graphics.Color(0xFF9C27B0), // Purple
                 onClick = {
                     try {
-                        android.util.Log.d("HomeScreen", "Navegando a pantalla de restricciones")
-                        navController.navigate("restricciones")
+                        android.util.Log.d("HomeScreen", "Navegando a pantalla de perfil")
+                        navController.navigate("profile")
                     } catch (e: Exception) {
                         android.util.Log.e(
                             "HomeScreen",
-                            "Error al navegar a restricciones: ${e.message}",
+                            "Error al navegar a perfil: ${e.message}",
                             e
                         )
                     }
-                }
-            )
+                }            )
 
             // Espacio para empujar el botón de logout al fondo
             Spacer(modifier = Modifier.weight(1f))

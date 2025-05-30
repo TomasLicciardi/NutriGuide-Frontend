@@ -16,11 +16,9 @@ class RestriccionesViewModel : ViewModel() {
 
     private val _userRestrictions = mutableStateOf<Set<String>>(emptySet())
     val userRestrictions: State<Set<String>> = _userRestrictions
-
     private val _availableRestrictions = mutableStateOf(listOf(
-        "Sin gluten", "Sin lactosa", "Sin azúcar", "Bajo en grasas", 
-        "Vegetariano", "Vegano", "Sin frutos secos", "Sin mariscos", 
-        "Sin huevo", "Sin soja", "Sin colorantes", "Sin conservantes"
+        "Sin gluten", "Sin lactosa", "Vegano", "Vegetariano", 
+        "Sin frutos secos"
     ))
     val availableRestrictions: State<List<String>> = _availableRestrictions
 

@@ -312,32 +312,7 @@ fun EditProfileScreen(
                             Text("CAMBIAR CONTRASEÑA")
                         }
                     }
-                }
-            }
-            
-            // Botón para configurar restricciones
-            OutlinedButton(
-                onClick = { navController.navigate("restricciones") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = YellowSecondary
-                ),
-                border = BorderStroke(
-                    width = 2.dp,
-                    color = YellowSecondary
-                )
-
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = "Configurar"
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("CONFIGURAR RESTRICCIONES")
-            }
+                }            }
         }
         
         // Snackbar para mensajes

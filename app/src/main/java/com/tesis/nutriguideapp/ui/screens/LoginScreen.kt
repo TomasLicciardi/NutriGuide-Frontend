@@ -176,9 +176,7 @@ fun LoginScreen(
                         } else {
                             Text("INICIAR SESIÓN")
                         }
-                    }
-
-                    // Recuperar contraseña
+                    }                    // Recuperar contraseña
                     TextButton(
                         onClick = {
                             // TODO: Navegar a recuperar contraseña
@@ -186,29 +184,6 @@ fun LoginScreen(
                         modifier = Modifier.padding(top = 8.dp)
                     ) {
                         Text("¿Olvidaste tu contraseña?")
-                    }                    // Botón para probar la conexión
-                    OutlinedButton(
-                        onClick = {
-                            if (!loading) {
-                                viewModel.testConnection(context) { success, message ->
-                                    coroutineScope.launch {
-                                        snackbarHostState.showSnackbar(
-                                            message = message,
-                                            duration = SnackbarDuration.Long
-                                        )
-                                    }
-                                }
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp),
-                        enabled = !loading,
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = GreenPrimary
-                        )
-                    ) {
-                        Text("Probar conexión con el servidor")
                     }
 
                     // Registro

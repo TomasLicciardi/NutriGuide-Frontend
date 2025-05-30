@@ -1,9 +1,6 @@
 package com.tesis.nutriguideapp.viewmodel
 
 import android.content.Context
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tesis.nutriguideapp.api.HistoryService
@@ -25,23 +22,6 @@ class HistoryViewModel : ViewModel() {
 
     private var _lastContext: Context? = null
 
-    // Propiedades sin setters manuales
-    var filterText by mutableStateOf("")
-        private set
-
-    var selectedRestrictions = setOf<String>()
-        private set
-
-    // Métodos explícitos para actualizar propiedades si quieres
-    fun updateFilterText(text: String) {
-        filterText = text
-    }
-
-    fun updateSelectedRestrictions(restrictions: Set<String>) {
-        selectedRestrictions = restrictions
-        loadHistory(null)
-    }
-
     fun loadHistory(context: Context?) {
         if (context == null && _lastContext == null) {
             _error.value = "Se requiere el contexto para cargar el historial"
@@ -62,28 +42,7 @@ class HistoryViewModel : ViewModel() {
                 }
 
                 val allProducts = historyService.getUserHistory()
-                val filteredProducts = if (selectedRestrictions.isEmpty()) {
-                    allProducts
-                } else {
-                    allProducts.filter { product ->
-                        val detectedRestrictions = product.getRestrictionsDetected()
-                        selectedRestrictions.all { restriction ->
-                            detectedRestrictions.any { it.contains(restriction, ignoreCase = true) }
-                        }
-                    }
-                }
-
-                val textFilteredProducts = if (filterText.isBlank()) {
-                    filteredProducts
-                } else {
-                    filteredProducts.filter { product ->
-                        product.name?.contains(filterText, ignoreCase = true) == true ||
-                                product.getTextDetected().contains(filterText, ignoreCase = true) ||
-                                product.getIngredients().any { it.contains(filterText, ignoreCase = true) }
-                    }
-                }
-
-                _products.value = textFilteredProducts
+                _products.value = allProducts
             } catch (e: Exception) {
                 _error.value = "Error al cargar el historial: ${e.message}"
             } finally {

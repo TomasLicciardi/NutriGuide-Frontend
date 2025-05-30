@@ -1,8 +1,5 @@
 package com.tesis.nutriguideapp.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -11,9 +8,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.FilterList
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,20 +27,12 @@ import com.tesis.nutriguideapp.viewmodel.HistoryViewModel
 @Composable
 fun HistoryScreen(
     navController: NavController,
-    selectedRestrictions: Set<String>,
-    viewModel: HistoryViewModel = viewModel()
+    viewModel: HistoryViewModel = viewModel(),
+    selectedRestrictions: Set<String>
 ) {
     val products by viewModel.products.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
-
-    var showFilterDialog by remember { mutableStateOf(false) }
-    var showSearchBar by remember { mutableStateOf(false) }
-
-    // Inicializar las restricciones seleccionadas en el ViewModel
-    LaunchedEffect(selectedRestrictions) {
-        viewModel.updateSelectedRestrictions(selectedRestrictions)
-    }
 
     // Cargar historial al iniciar la pantalla
     val context = LocalContext.current
@@ -57,9 +43,7 @@ fun HistoryScreen(
     // Mostrar errores con Snackbar
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(error) {
-        error?.let {
-            snackbarHostState.showSnackbar(it)
-        }
+        error?.let { snackbarHostState.showSnackbar(it) }
     }
 
     Scaffold(
@@ -70,101 +54,26 @@ fun HistoryScreen(
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
                     }
-                },
-                actions = {
-                    IconButton(onClick = { showSearchBar = !showSearchBar }) {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = "Buscar"
-                        )
-                    }
-                    IconButton(onClick = { showFilterDialog = true }) {
-                        Icon(
-                            imageVector = Icons.Default.FilterList,
-                            contentDescription = "Filtrar"
-                        )
-                    }
                 }
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        content = { padding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-            ) {
-                // Barra de búsqueda animada
-                AnimatedVisibility(
-                    visible = showSearchBar,
-                    enter = fadeIn(),
-                    exit = fadeOut()
-                ) {
-                    OutlinedTextField(
-                        value = viewModel.filterText,
-                        onValueChange = {
-                            viewModel.updateFilterText(it)
-                            viewModel.loadHistory(context)
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        placeholder = { Text("Buscar productos...") },
-                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                        trailingIcon = {
-                            if (viewModel.filterText.isNotEmpty()) {
-                                IconButton(onClick = {
-                                    viewModel.updateFilterText("")
-                                    viewModel.loadHistory(context)
-                                }) {
-                                    Icon(Icons.Default.Clear, contentDescription = "Limpiar")
-                                }
-                            }
-                        },
-                        singleLine = true,
-                        shape = RoundedCornerShape(24.dp)
-                    )
-                }
-
-                // Indicador de restricciones activas
-                if (selectedRestrictions.isNotEmpty()) {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                        )
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                "Filtros activos:",
-                                style = MaterialTheme.typography.labelLarge
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                selectedRestrictions.forEach { restriction ->
-                                    SuggestionChip(
-                                        onClick = { },
-                                        label = { Text(restriction) }
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (isLoading) {
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+            when {
+                isLoading -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
                         CircularProgressIndicator(color = Green40)
                     }
-                } else if (products.isEmpty()) {
+                }
+                products.isEmpty() -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
@@ -174,7 +83,8 @@ fun HistoryScreen(
                             style = MaterialTheme.typography.bodyLarge
                         )
                     }
-                } else {
+                }
+                else -> {
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
@@ -191,29 +101,9 @@ fun HistoryScreen(
                 }
             }
         }
-    )
-
-    // Diálogo de filtro
-    if (showFilterDialog) {
-        AlertDialog(
-            onDismissRequest = { showFilterDialog = false },
-            title = { Text("Filtrar por restricciones") },
-            text = {
-                Text("Esta funcionalidad se implementará en futuras actualizaciones.")
-            },
-            confirmButton = {
-                Button(
-                    onClick = { showFilterDialog = false },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Green40
-                    )
-                ) {
-                    Text("Aceptar")
-                }
-            }
-        )
     }
 }
+
 
 @Composable
 fun ProductHistoryItem(
