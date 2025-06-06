@@ -18,12 +18,8 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
 import java.util.*
 
-class UploadViewModel : ViewModel() {
-    private val _imageUri = mutableStateOf<Uri?>(null)
+class UploadViewModel : ViewModel() {    private val _imageUri = mutableStateOf<Uri?>(null)
     val imageUri: State<Uri?> = _imageUri
-
-    private val _productName = mutableStateOf("")
-    val productName: State<String> = _productName
 
     private val _analyzing = mutableStateOf(false)
     val analyzing: State<Boolean> = _analyzing
@@ -36,15 +32,10 @@ class UploadViewModel : ViewModel() {
 
     private val _error = mutableStateOf<String?>(null)
     val error: State<String?> = _error
-
     fun setImageUri(uri: Uri?) {
         _imageUri.value = uri
         _analysisResponse.value = null
         _error.value = null
-    }
-
-    fun setProductName(name: String) {
-        _productName.value = name
     }
 
     fun analyzeImage(context: Context) {
@@ -71,13 +62,8 @@ class UploadViewModel : ViewModel() {
                 val service = RetrofitInstance.getAuthenticatedRetrofit(context)
                     .create(AnalysisService::class.java)
                 val response = service.analyzeImage(imagePart)
-
                 if (response.isSuccessful) {
                     _analysisResponse.value = response.body()
-                    if (_productName.value.isEmpty() && !response.body()?.textDetected.isNullOrEmpty()) {
-                        // Si no hay nombre de producto y el OCR detectó algo, usamos eso como nombre
-                        _productName.value = response.body()?.textDetected?.lines()?.firstOrNull() ?: ""
-                    }
                 } else {
                     _error.value = "Error al analizar la imagen: ${response.code()} - ${response.message()}"
                     android.util.Log.e("UploadViewModel", "Error HTTP al analizar imagen: ${response.code()} - ${response.message()}")
@@ -98,13 +84,7 @@ class UploadViewModel : ViewModel() {
     }
 
     fun uploadProduct(context: Context, onSuccess: () -> Unit) {
-        val uri = _imageUri.value ?: run {
-            _error.value = "Por favor, selecciona una imagen"
-            return
-        }
-
-        if (_productName.value.isBlank()) {
-            _error.value = "Por favor, ingresa un nombre para el producto"
+        val uri = _imageUri.value ?: run {            _error.value = "Por favor, selecciona una imagen"
             return
         }
 
@@ -131,16 +111,18 @@ class UploadViewModel : ViewModel() {
                 val resultJson = gson.toJson(analysis)
                 android.util.Log.d("UploadViewModel", "JSON generado: ${resultJson.take(100)}...")
                 
+                // Determinar si el producto es apto basado en el análisis
+                val isSuitable = determineIfSuitable(analysis)
+                
                 // Preparar los datos del producto
-                val nameBody = _productName.value.toRequestBody("text/plain".toMediaTypeOrNull())
                 val jsonBody = resultJson.toRequestBody("text/plain".toMediaTypeOrNull())
                 val historyIdBody = "1".toRequestBody("text/plain".toMediaTypeOrNull()) // Por ahora es estático
+                val isSuitableBody = isSuitable.toString().toRequestBody("text/plain".toMediaTypeOrNull())
 
                 // Llamada al API para subir el producto
-                android.util.Log.d("UploadViewModel", "Iniciando petición para subir producto")
-                val service = RetrofitInstance.getAuthenticatedRetrofit(context)
+                android.util.Log.d("UploadViewModel", "Iniciando petición para subir producto");              val service = RetrofitInstance.getAuthenticatedRetrofit(context)
                     .create(ProductService::class.java)
-                val response = service.createProduct(imagePart, nameBody, jsonBody, historyIdBody)
+                val response = service.createProduct(imagePart, jsonBody, historyIdBody, isSuitableBody)
 
                 if (response.isSuccessful) {
                     onSuccess()
@@ -180,11 +162,17 @@ class UploadViewModel : ViewModel() {
         file.outputStream().use { inputStream?.copyTo(it) }
         android.util.Log.d("UploadViewModel", "Imagen original: ${file.length() / 1024} KB")
         return file
+    }    // Método para determinar si un producto es apto basado en el análisis
+    private fun determineIfSuitable(analysis: AnalysisResponse): Boolean {
+        // Usar directamente el campo 'suitable' que ya viene en la respuesta del análisis
+        return analysis.suitable
     }
-
+      // Resetear el formulario
     private fun resetForm() {
         _imageUri.value = null
-        _productName.value = ""
         _analysisResponse.value = null
+        _analyzing.value = false
+        _uploading.value = false
+        _error.value = null
     }
 }

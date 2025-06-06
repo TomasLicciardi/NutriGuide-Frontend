@@ -11,14 +11,12 @@ interface ProductService {
     suspend fun getProductById(@Path("id") id: Int): Product
 
     @GET("/products/")
-    suspend fun getAllProducts(): List<Product>
-
-    @Multipart
+    suspend fun getAllProducts(): List<Product>    @Multipart
     @POST("/products/")
     suspend fun createProduct(
         @Part image: MultipartBody.Part?, // ok
-        @Part("name") name: RequestBody,
         @Part("result_json") resultJson: RequestBody,
-        @Part("history_id") historyId: RequestBody
+        @Part("history_id") historyId: RequestBody,
+        @Part("is_suitable") isSuitable: RequestBody
     ): Response<Map<String, Any>> // usa el Response correcto de Retrofit
 }

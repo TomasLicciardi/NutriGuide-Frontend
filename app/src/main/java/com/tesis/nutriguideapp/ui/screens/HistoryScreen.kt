@@ -131,20 +131,17 @@ fun ProductHistoryItem(
                 modifier = Modifier
                     .weight(1f)
                     .padding(end = 8.dp)
-            ) {
-                Text(
-                    text = product.name ?: "Sin nombre",
+            ) {                Text(
+                    text = product.getTextDetected().take(100).ifEmpty { "Producto analizado" },
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = product.getTextDetected().take(100) + if (product.getTextDetected().length > 100) "..." else "",
+                    text = if (product.isSuitable) "Apto para consumo" else "No apto para consumo",
                     style = MaterialTheme.typography.bodySmall,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = if (product.isSuitable) Green40 else MaterialTheme.colorScheme.error
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 product.imageUrl?.let {

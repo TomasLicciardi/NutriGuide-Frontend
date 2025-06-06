@@ -42,9 +42,7 @@ fun UploadScreen(
     val scrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
-    
-    val imageUri by viewModel.imageUri
-    val productName by viewModel.productName
+      val imageUri by viewModel.imageUri
     val analyzing by viewModel.analyzing
     val uploading by viewModel.uploading
     val analysisResponse by viewModel.analysisResponse
@@ -203,31 +201,12 @@ fun UploadScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(16.dp)
-                    ) {
-                        // Nombre del producto
+                    ) {                        // Título del análisis
                         Text(
                             text = "Resultado del análisis",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(bottom = 12.dp)
-                        )
-                        
-                        // Campo para editar el nombre
-                        OutlinedTextField(
-                            value = productName,
-                            onValueChange = { viewModel.setProductName(it) },
-                            label = { Text("Nombre del producto") },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.ShoppingCart,
-                                    contentDescription = "Producto"
-                                )
-                            },
-                            singleLine = true,
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 12.dp)
                         )
                         
                         // Aptitud del producto

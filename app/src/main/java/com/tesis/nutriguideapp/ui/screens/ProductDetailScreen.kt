@@ -72,11 +72,10 @@ fun ProductDetailScreen(
     }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
+        topBar = {            TopAppBar(
                 title = { 
                     Text(
-                        text = product?.name ?: "Detalles del Producto",
+                        text = "Detalles del Producto",
                         maxLines = 1
                     )
                 },
@@ -168,15 +167,7 @@ fun ProductDetailScreen(
                                     fontWeight = FontWeight.Bold
                                 )
                                 Spacer(modifier = Modifier.height(16.dp))
-                                
-                                // Nombre del producto
-                                Text(
-                                    text = "Nombre: ${p.name ?: "Sin nombre"}",
-                                    style = MaterialTheme.typography.bodyLarge
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                
-                                // Fecha de análisis si está disponible
+                                  // Fecha de análisis si está disponible
                                 p.date?.let { date ->
                                     Text(
                                         text = "Fecha de análisis: $date",

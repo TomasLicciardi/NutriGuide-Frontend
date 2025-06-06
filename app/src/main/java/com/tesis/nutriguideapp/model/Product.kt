@@ -6,7 +6,6 @@ import com.google.gson.reflect.TypeToken
 
 data class Product(
     @SerializedName("id") val id: Int,
-    @SerializedName("name") val name: String?,
     @SerializedName("result_json") val resultJson: String,
     @SerializedName("date") val date: String,
     @SerializedName("image_url") val imageUrl: String?,
