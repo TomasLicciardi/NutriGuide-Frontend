@@ -6,6 +6,6 @@ data class AuthRequest(
     @SerializedName("email")
     val email: String,
 
-    @SerializedName("contrasena")
+    @SerializedName("password")
     val password: String
 )

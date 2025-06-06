@@ -91,10 +91,10 @@ class RegisterViewModel : ViewModel() {
                 android.util.Log.d("RegisterViewModel", "Iniciando registro: ${_email.value}")
                 val service = RetrofitInstance.retrofit.create(AuthService::class.java)
                 val request = RegisterRequest(
-                    usuario = _username.value,
+                    username = _username.value,
                     email = _email.value,
-                    contrasena = _password.value,
-                    restricciones = _selectedRestrictions.value
+                    password = _password.value,
+                    restrictions = _selectedRestrictions.value
                 )
                 try {
                     android.util.Log.d("RegisterViewModel", "Enviando solicitud de registro")
