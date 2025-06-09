@@ -234,21 +234,19 @@ fun RegisterScreen(
                     Button(
                         onClick = {
                             viewModel.register(
+                                context = context,
                                 onSuccess = {
                                     coroutineScope.launch {
                                         try {
-                                            android.util.Log.d("RegisterScreen", "Registro exitoso, mostrando Snackbar")
-                                            snackbarHostState.showSnackbar("Registro exitoso")
+                                            android.util.Log.d("RegisterScreen", "Registro y login automático exitoso")
+                                            snackbarHostState.showSnackbar("¡Bienvenido! Registro exitoso")
                                             
-                                            // Pequeña pausa adicional antes de navegar
-                                            kotlinx.coroutines.delay(300)
-                                            
-                                            android.util.Log.d("RegisterScreen", "Intentando navegar después del registro exitoso")
+                                            android.util.Log.d("RegisterScreen", "Navegando directamente a home")
                                             try {
                                                 onRegisterSuccess()
-                                                android.util.Log.d("RegisterScreen", "Navegación después del registro completada con éxito")
+                                                android.util.Log.d("RegisterScreen", "Navegación a home completada con éxito")
                                             } catch (e: Exception) {
-                                                android.util.Log.e("RegisterScreen", "Error al navegar después del registro: ${e.message}", e)
+                                                android.util.Log.e("RegisterScreen", "Error al navegar a home: ${e.message}", e)
                                                 snackbarHostState.showSnackbar("Error al navegar: ${e.message}")
                                             }
                                         } catch (e: Exception) {

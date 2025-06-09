@@ -8,11 +8,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -22,6 +25,7 @@ import com.tesis.nutriguideapp.model.Product
 import com.tesis.nutriguideapp.ui.theme.Green40
 import com.tesis.nutriguideapp.ui.theme.Yellow40
 import com.tesis.nutriguideapp.viewmodel.HistoryViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,10 +42,11 @@ fun HistoryScreen(
     val context = LocalContext.current
     LaunchedEffect(Unit) {
         viewModel.loadHistory(context)
-    }
-
-    // Mostrar errores con Snackbar
+    }    // Mostrar errores con Snackbar
     val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    var showClearDialog by remember { mutableStateOf(false) }
+    
     LaunchedEffect(error) {
         error?.let { snackbarHostState.showSnackbar(it) }
     }
@@ -53,6 +58,19 @@ fun HistoryScreen(
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                    }
+                },
+                actions = {
+                    if (products.isNotEmpty()) {
+                        IconButton(
+                            onClick = { showClearDialog = true }
+                        ) {
+                            Icon(
+                                Icons.Default.DeleteForever,
+                                contentDescription = "Limpiar historial",
+                                tint = Color.Red
+                            )
+                        }
                     }
                 }
             )
@@ -91,16 +109,74 @@ fun HistoryScreen(
                             .padding(horizontal = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                         contentPadding = PaddingValues(vertical = 16.dp)
-                    ) {
-                        items(products) { product ->
-                            ProductHistoryItem(product) {
-                                navController.navigate("product_detail/${product.id}")
-                            }
-                        }
-                    }
-                }
+                    ) {                        items(products) { product ->
+                            ProductHistoryItem(
+                                product = product,
+                                onClick = {
+                                    navController.navigate("product_detail/${product.id}")
+                                },
+                                onDelete = { productId ->
+                                    viewModel.deleteProduct(
+                                        productId = productId,
+                                        onSuccess = { message ->
+                                            scope.launch {
+                                                snackbarHostState.showSnackbar(message)
+                                            }
+                                        },
+                                        onError = { error ->
+                                            scope.launch {
+                                                snackbarHostState.showSnackbar(error)
+                                            }
+                                        }
+                                    )
+                                }
+                            )
+                        }                }
             }
         }
+        
+        // Diálogo de confirmación para limpiar historial
+        if (showClearDialog) {
+            AlertDialog(
+                onDismissRequest = { showClearDialog = false },
+                title = {
+                    Text("Confirmar eliminación")
+                },
+                text = {
+                    Text("¿Estás seguro de que quieres eliminar todo el historial? Esta acción no se puede deshacer.")
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            showClearDialog = false
+                            viewModel.clearAllHistory(
+                                onSuccess = { message ->
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar(message)
+                                    }
+                                },
+                                onError = { error ->
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar(error)
+                                    }
+                                }
+                            )
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                    ) {
+                        Text("Eliminar", color = Color.White)
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { showClearDialog = false }
+                    ) {
+                        Text("Cancelar")
+                    }
+                }
+            )
+        }
+    }
     }
 }
 
@@ -108,8 +184,11 @@ fun HistoryScreen(
 @Composable
 fun ProductHistoryItem(
     product: Product,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onDelete: (Int) -> Unit
 ) {
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -126,12 +205,12 @@ fun ProductHistoryItem(
                 .fillMaxWidth()
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(
+        ) {            Column(
                 modifier = Modifier
                     .weight(1f)
                     .padding(end = 8.dp)
-            ) {                Text(
+            ) {
+                Text(
                     text = product.getTextDetected().take(100).ifEmpty { "Producto analizado" },
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 1,
@@ -153,6 +232,17 @@ fun ProductHistoryItem(
                 }
             }
 
+            // Botón de eliminar
+            IconButton(
+                onClick = { showDeleteDialog = true },
+                modifier = Modifier.padding(start = 8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Eliminar producto",
+                    tint = Color.Red
+                )
+            }
             Icon(
                 imageVector = Icons.Default.ArrowBack,
                 contentDescription = "Ver detalle",
@@ -160,5 +250,36 @@ fun ProductHistoryItem(
                 tint = Yellow40
             )
         }
+    }
+    
+    // Diálogo de confirmación para eliminar producto individual
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = {
+                Text("Confirmar eliminación")
+            },
+            text = {
+                Text("¿Estás seguro de que quieres eliminar este producto? Esta acción no se puede deshacer.")
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDeleteDialog = false
+                        onDelete(product.id)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                ) {
+                    Text("Eliminar", color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showDeleteDialog = false }
+                ) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 }

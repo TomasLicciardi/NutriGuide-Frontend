@@ -55,11 +55,8 @@ class LoginViewModel : ViewModel() {
                     // Guardar token
                     TokenManager(context).saveToken(response.accessToken)
                     
-                    // Pequeña pausa antes de navegar
-                    kotlinx.coroutines.delay(500)
-                    
-                    // Llamar al callback de éxito
-                    onSuccess()                } catch (e: retrofit2.HttpException) {
+                    // Llamar al callback de éxito inmediatamente
+                    onSuccess()} catch (e: retrofit2.HttpException) {
                     android.util.Log.e("LoginViewModel", "Error HTTP en login: ${e.code()}", e)
                     if (e.code() == 401) {
                         onError("Email o contraseña incorrectos. Por favor, verifica tus datos.")

@@ -6,6 +6,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -41,8 +42,8 @@ fun UploadScreen(
     val context = LocalContext.current
     val scrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
-    val coroutineScope = rememberCoroutineScope()
-      val imageUri by viewModel.imageUri
+    
+    val imageUri by viewModel.imageUri
     val analyzing by viewModel.analyzing
     val uploading by viewModel.uploading
     val analysisResponse by viewModel.analysisResponse
@@ -52,40 +53,36 @@ fun UploadScreen(
         viewModel.setImageUri(uri)
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(WhiteBackground)
-    ) {
-        Column(
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Analizar Producto") },
+                navigationIcon = {
+                    IconButton(onClick = { navController?.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                    }
+                }
+            )
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { padding ->        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp)
+                .padding(padding)
+                .padding(16.dp)
                 .verticalScroll(scrollState),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Título
-            Text(
-                text = "ANALIZAR PRODUCTO",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = GreenPrimary,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(bottom = 24.dp)
-            )
-            
             // Área para la imagen
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(240.dp)
-                    .clip(RoundedCornerShape(16.dp)),
+                    .height(300.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = Color.LightGray.copy(alpha = 0.2f)
+                    containerColor = Color.LightGray.copy(alpha = 0.1f)
                 ),
-                elevation = CardDefaults.cardElevation(
-                    defaultElevation = 4.dp
-                )
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -112,117 +109,150 @@ fun UploadScreen(
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
                                 text = "Selecciona una imagen para analizar",
-                                color = Color.Gray
+                                color = Color.Gray,
+                                style = MaterialTheme.typography.bodyLarge
                             )
                         }
                     }
                     
                     if (analyzing) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(64.dp),
-                            color = GreenPrimary
-                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.5f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(64.dp),
+                                color = GreenPrimary
+                            )
+                        }
                     }
                 }
             }
-              // Botón para seleccionar imagen
+
+            Spacer(modifier = Modifier.height(24.dp))            // Botones de acción
             Button(
                 onClick = { launcher.launch("image/*") },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 16.dp),
-                shape = RoundedCornerShape(12.dp),
+                    .height(56.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = YellowSecondary
+                    containerColor = MaterialTheme.colorScheme.primary
                 )
             ) {
                 Icon(
                     imageVector = Icons.Default.AddPhotoAlternate,
-                    contentDescription = "Seleccionar imagen"
+                    contentDescription = "Seleccionar imagen",
+                    modifier = Modifier.size(24.dp)
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("SELECCIONAR IMAGEN")
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = "SELECCIONAR DE GALERÍA",
+                    fontWeight = FontWeight.SemiBold
+                )
             }
             
-            // Botón para usar cámara directamente
+            Spacer(modifier = Modifier.height(12.dp))
+            
             OutlinedButton(
                 onClick = { navController?.navigate("camera") },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = GreenPrimary
-                )
+                    .height(56.dp),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
             ) {
                 Icon(
                     imageVector = Icons.Default.Camera,
-                    contentDescription = "Usar cámara"
+                    contentDescription = "Usar cámara",
+                    modifier = Modifier.size(24.dp),
+                    tint = MaterialTheme.colorScheme.primary
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("USAR CÁMARA")
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = "TOMAR FOTO",
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
             
-            // Botón para analizar
-            Button(
-                onClick = { viewModel.analyzeImage(context) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 12.dp),
-                shape = RoundedCornerShape(12.dp),
-                enabled = imageUri != null && !analyzing,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = GreenPrimary
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = "Analizar"
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(if (analyzing) "ANALIZANDO..." else "ANALIZAR IMAGEN")
-            }
-            
-            // Mostrar resultado del análisis si existe
-            if (analysisResponse != null) {
-                Card(
+            if (imageUri != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                Button(
+                    onClick = { viewModel.analyzeImage(context) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 16.dp)
-                        .clip(RoundedCornerShape(16.dp)),
-                    colors = CardDefaults.cardColors(
-                        containerColor = WhiteBackground
-                    ),
-                    elevation = CardDefaults.cardElevation(
-                        defaultElevation = 4.dp
+                        .height(56.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    enabled = !analyzing,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = GreenPrimary
                     )
+                ) {
+                    if (analyzing) {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text("ANALIZANDO...")
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "Analizar",
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "ANALIZAR IMAGEN",
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            }
+              // Mostrar resultado del análisis si existe
+            if (analysisResponse != null) {
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp)
-                    ) {                        // Título del análisis
+                            .padding(20.dp)
+                    ) {
+                        // Título del análisis
                         Text(
                             text = "Resultado del análisis",
-                            fontSize = 18.sp,
+                            style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(bottom = 12.dp)
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(bottom = 16.dp)
                         )
                         
                         // Aptitud del producto
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(bottom = 12.dp),
+                                .padding(bottom = 16.dp),
+                            shape = RoundedCornerShape(12.dp),
                             colors = CardDefaults.cardColors(
                                 containerColor = if (analysisResponse?.suitable == true) 
                                     Color(0xFFE8F5E9) else Color(0xFFFFEBEE)
                             )
-                        ) {
-                            Row(
+                        ) {                            Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(12.dp),
+                                    .padding(16.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(
@@ -231,107 +261,134 @@ fun UploadScreen(
                                     contentDescription = "Aptitud",
                                     tint = if (analysisResponse?.suitable == true) 
                                         Color(0xFF4CAF50) else Color(0xFFF44336),
-                                    modifier = Modifier.size(24.dp)
+                                    modifier = Modifier.size(28.dp)
                                 )
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Text(
-                                    text = if (analysisResponse?.suitable == true) 
-                                        "Producto apto según tus restricciones" 
-                                    else 
-                                        "Producto NO apto según tus restricciones",
-                                    fontWeight = FontWeight.Medium
-                                )
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Column {
+                                    Text(
+                                        text = if (analysisResponse?.suitable == true) 
+                                            "Producto APTO" 
+                                        else 
+                                            "Producto NO APTO",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 16.sp
+                                    )
+                                    Text(
+                                        text = if (analysisResponse?.suitable == true) 
+                                            "Según tus restricciones alimentarias" 
+                                        else 
+                                            "Contiene ingredientes restringidos",
+                                        fontSize = 14.sp,
+                                        color = Color.Gray
+                                    )
+                                }
                             }
                         }
                         
                         // Restricciones detectadas
                         if (analysisResponse?.restrictionsDetected?.isNotEmpty() == true) {
                             Text(
-                                text = "Restricciones detectadas:",
-                                fontWeight = FontWeight.Medium,
-                                modifier = Modifier.padding(bottom = 4.dp, top = 8.dp)
+                                text = "Restricciones detectadas",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(bottom = 8.dp)
                             )
                             
                             analysisResponse?.restrictionsDetected?.forEach { restriction ->
-                                Row(
-                                    modifier = Modifier.padding(vertical = 4.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Warning,
-                                        contentDescription = "Restricción",
-                                        tint = Color(0xFFF44336),
-                                        modifier = Modifier.size(16.dp)
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 2.dp),
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = Color(0xFFFFF3E0)
                                     )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(restriction)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Warning,
+                                            contentDescription = "Restricción",
+                                            tint = Color(0xFFF57C00),
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Text(
+                                            text = restriction,
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                    }
                                 }
                             }
+                            
+                            Spacer(modifier = Modifier.height(16.dp))
                         }
                         
                         // Ingredientes
                         if (analysisResponse?.ingredients?.isNotEmpty() == true) {
                             Text(
-                                text = "Ingredientes:",
-                                fontWeight = FontWeight.Medium,
-                                modifier = Modifier.padding(bottom = 4.dp, top = 8.dp)
+                                text = "Ingredientes detectados",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(bottom = 8.dp)
                             )
                             
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .border(
-                                        width = 1.dp,
-                                        color = Color.LightGray,
-                                        shape = RoundedCornerShape(8.dp)
-                                    )
-                                    .padding(8.dp)
-                            ) {
-                                Text(
-                                    analysisResponse?.ingredients?.joinToString(", ") ?: "",
-                                    fontSize = 14.sp
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = Color(0xFFF5F5F5)
+                                )
+                            ) {                                Text(
+                                    text = analysisResponse?.ingredients?.joinToString(", ") ?: "",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.padding(12.dp)
                                 )
                             }
+                            
+                            Spacer(modifier = Modifier.height(16.dp))
                         }
                         
                         // Texto detectado
                         if (!analysisResponse?.textDetected.isNullOrEmpty()) {
                             Text(
-                                text = "Texto detectado:",
-                                fontWeight = FontWeight.Medium,
-                                modifier = Modifier.padding(bottom = 4.dp, top = 8.dp)
+                                text = "Texto detectado en la imagen",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(bottom = 8.dp)
                             )
                             
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .border(
-                                        width = 1.dp,
-                                        color = Color.LightGray,
-                                        shape = RoundedCornerShape(8.dp)
-                                    )
-                                    .padding(8.dp)
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = Color(0xFFF5F5F5)
+                                )
                             ) {
                                 Text(
-                                    analysisResponse?.textDetected ?: "",
-                                    fontSize = 14.sp
+                                    text = analysisResponse?.textDetected ?: "",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier.padding(12.dp)
                                 )
                             }
+                            
+                            Spacer(modifier = Modifier.height(20.dp))
                         }
                         
                         // Botón para guardar el producto
                         Button(
                             onClick = { 
                                 viewModel.uploadProduct(context) {
-                                    // Navegar a historial o mostrar éxito
                                     navController?.navigate("home")
                                 }
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(top = 16.dp),
+                                .height(56.dp),
                             enabled = !uploading,
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = GreenPrimary
                             )
@@ -341,13 +398,19 @@ fun UploadScreen(
                                     color = Color.White,
                                     modifier = Modifier.size(24.dp)
                                 )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text("GUARDANDO...")
                             } else {
                                 Icon(
                                     imageVector = Icons.Default.Save,
-                                    contentDescription = "Guardar"
+                                    contentDescription = "Guardar",
+                                    modifier = Modifier.size(24.dp)
                                 )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("GUARDAR PRODUCTO")
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = "GUARDAR PRODUCTO",
+                                    fontWeight = FontWeight.SemiBold
+                                )
                             }
                         }
                     }
@@ -361,12 +424,5 @@ fun UploadScreen(
                 snackbarHostState.showSnackbar(error ?: "")
             }
         }
-        
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(16.dp)
-        )
     }
 }

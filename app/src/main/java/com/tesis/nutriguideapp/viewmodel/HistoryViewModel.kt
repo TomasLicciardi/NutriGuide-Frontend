@@ -44,7 +44,64 @@ class HistoryViewModel : ViewModel() {
                 val allProducts = historyService.getUserHistory()
                 _products.value = allProducts
             } catch (e: Exception) {
-                _error.value = "Error al cargar el historial: ${e.message}"
+                _error.value = "Error al cargar el historial: ${e.message}"            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun deleteProduct(productId: Int, onSuccess: (String) -> Unit, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            try {
+                val historyService = _lastContext?.let {
+                    RetrofitInstance.getAuthenticatedRetrofit(it).create(HistoryService::class.java)
+                }
+                if (historyService == null) {
+                    onError("No se pudo inicializar el servicio de historial")
+                    return@launch
+                }
+
+                val response = historyService.deleteHistoryProduct(productId)
+                if (response.isSuccessful) {
+                    // Actualizar la lista local eliminando el producto
+                    _products.value = _products.value.filter { it.id != productId }
+                    onSuccess("Producto eliminado exitosamente")
+                } else {
+                    onError("Error al eliminar el producto: ${response.message()}")
+                }
+            } catch (e: Exception) {
+                onError("Error al eliminar el producto: ${e.message}")
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun clearAllHistory(onSuccess: (String) -> Unit, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            try {
+                val historyService = _lastContext?.let {
+                    RetrofitInstance.getAuthenticatedRetrofit(it).create(HistoryService::class.java)
+                }
+                if (historyService == null) {
+                    onError("No se pudo inicializar el servicio de historial")
+                    return@launch
+                }
+
+                val response = historyService.clearHistory()
+                if (response.isSuccessful) {
+                    // Limpiar la lista local
+                    _products.value = emptyList()
+                    onSuccess("Historial eliminado exitosamente")
+                } else {
+                    onError("Error al eliminar el historial: ${response.message()}")
+                }
+            } catch (e: Exception) {
+                onError("Error al eliminar el historial: ${e.message}")
             } finally {
                 _isLoading.value = false
             }
