@@ -63,14 +63,19 @@ class UploadViewModel : ViewModel() {
                 val service = RetrofitInstance.getAuthenticatedRetrofit(context)
                     .create(AnalysisService::class.java)
                 val response = service.analyzeImage(imagePart)
-                
-                if (response.isSuccessful) {
+                  if (response.isSuccessful) {
                     val analysisResult = response.body()
-                    _analysisResponse.value = analysisResult
-                    android.util.Log.d("UploadViewModel", "Análisis exitoso: ${analysisResult?.productId}")
+                    if (analysisResult != null) {
+                        _analysisResponse.value = analysisResult
+                        android.util.Log.d("UploadViewModel", "Análisis exitoso: ${analysisResult.productId}")
+                    } else {
+                        _error.value = "La respuesta del servidor está vacía"
+                        android.util.Log.e("UploadViewModel", "Response body es null a pesar del código 200")
+                    }
                 } else {
                     val errorBody = response.errorBody()?.string()
-                    _error.value = "Error al analizar la imagen: ${response.code()} - ${response.message()}\n$errorBody"
+                    val errorMessage = "Error al analizar la imagen: ${response.code()} - ${response.message()}"
+                    _error.value = if (errorBody != null) "$errorMessage\n$errorBody" else errorMessage
                     android.util.Log.e("UploadViewModel", "Error HTTP al analizar imagen: ${response.code()} - ${response.message()}")
                     android.util.Log.e("UploadViewModel", "Error body: $errorBody")
                 }

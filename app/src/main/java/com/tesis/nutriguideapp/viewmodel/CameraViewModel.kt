@@ -111,17 +111,20 @@ class CameraViewModel : ViewModel() {
                 // Llamar al servicio de análisis
                 val analysisService = RetrofitInstance.getAuthenticatedRetrofit(context).create(AnalysisService::class.java)
                 val response = analysisService.analyzeImage(imagePart)
-                
-                if (response.isSuccessful && response.body() != null) {
+                  if (response.isSuccessful && response.body() != null) {
+                    val analysisResult = response.body()!!
                     // El análisis fue exitoso
                     _analyzeSuccess.value = true
+                    android.util.Log.d("CameraViewModel", "Análisis exitoso para producto: ${analysisResult.productId}")
                     
-                    // Nota: Como AnalysisResponse no tiene productId, 
-                    // necesitamos encontrar otra forma de obtenerlo o almacenar información diferente
-                    // Por ahora, guardamos un ID ficticio para pruebas
-                    _productId.value = 1 // Valor temporal para pruebas
+                    // Guardar el ID del producto para navegación
+                    _productId.value = analysisResult.productId
                 } else {
-                    _error.value = "Error en la respuesta: ${response.message()}"
+                    val errorBody = response.errorBody()?.string()
+                    val errorMessage = "Error en la respuesta: ${response.code()} - ${response.message()}"
+                    _error.value = if (errorBody != null) "$errorMessage\n$errorBody" else errorMessage
+                    android.util.Log.e("CameraViewModel", "Error HTTP: ${response.code()} - ${response.message()}")
+                    android.util.Log.e("CameraViewModel", "Error body: $errorBody")
                 }
             } catch (e: Exception) {
                 _error.value = "Error al analizar la imagen: ${e.message}"

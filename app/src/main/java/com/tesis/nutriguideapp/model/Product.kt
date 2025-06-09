@@ -6,6 +6,7 @@ import com.google.gson.JsonDeserializationContext
 import com.google.gson.JsonDeserializer
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
+import com.google.gson.JsonParseException
 import java.lang.reflect.Type
 
 data class Product(
@@ -39,29 +40,60 @@ class ProductAnalysisDeserializer : JsonDeserializer<ProductAnalysis> {
         typeOfT: Type,
         context: JsonDeserializationContext
     ): ProductAnalysis {
-        val jsonObject = json.asJsonObject
-        
-        // Extraer campos con valores por defecto si no existen
-        val ingredientes = jsonObject.get("ingredientes")?.asString ?: ""
-        val puedeContener = jsonObject.get("puede_contener")?.asString
-        val textoDetectado = jsonObject.get("texto_detectado")?.asString ?: ""
-        
-        // Extraer clasificacion - puede ser un objeto vacío
-        val clasificacionMap = mutableMapOf<String, Restriction>()
-        jsonObject.get("clasificacion")?.asJsonObject?.let { clasificacionObj ->
-            clasificacionObj.entrySet().forEach { entry ->
-                val restrictionObj = entry.value.asJsonObject
-                val apto = restrictionObj.get("apto")?.asBoolean ?: true
-                val razon = restrictionObj.get("razon")?.asString
-                clasificacionMap[entry.key] = Restriction(apto, razon)
+        try {
+            android.util.Log.d("ProductAnalysisDeserializer", "Deserializando JSON: $json")
+              if (json.isJsonNull) {
+                android.util.Log.e("ProductAnalysisDeserializer", "JSON es null")
+                throw JsonParseException("JSON es null")
             }
+            
+            val jsonObject = json.asJsonObject
+            
+            // Extraer campos con valores por defecto si no existen
+            val ingredientes = jsonObject.get("ingredientes")?.asString ?: ""
+            val puedeContener = jsonObject.get("puede_contener")?.asString
+            val textoDetectado = jsonObject.get("texto_detectado")?.asString ?: ""
+            
+            android.util.Log.d("ProductAnalysisDeserializer", "Campos básicos extraídos - ingredientes: ${ingredientes.take(50)}, textoDetectado: ${textoDetectado.take(50)}")
+            
+            // Extraer clasificacion - puede ser un objeto vacío
+            val clasificacionMap = mutableMapOf<String, Restriction>()
+            jsonObject.get("clasificacion")?.asJsonObject?.let { clasificacionObj ->
+                clasificacionObj.entrySet().forEach { entry ->
+                    try {
+                        val restrictionObj = entry.value.asJsonObject
+                        val apto = restrictionObj.get("apto")?.asBoolean ?: true
+                        val razon = restrictionObj.get("razon")?.asString
+                        clasificacionMap[entry.key] = Restriction(apto, razon)
+                    } catch (e: Exception) {
+                        android.util.Log.e("ProductAnalysisDeserializer", "Error al procesar restricción ${entry.key}: ${e.message}")
+                        // Agregar restricción por defecto en caso de error
+                        clasificacionMap[entry.key] = Restriction(true, "Error al procesar")
+                    }
+                }
+            }
+            
+            android.util.Log.d("ProductAnalysisDeserializer", "Clasificaciones procesadas: ${clasificacionMap.keys}")
+            
+            val result = ProductAnalysis(
+                ingredientes = ingredientes,
+                puedeContener = puedeContener,
+                textoDetectado = textoDetectado,
+                clasificacion = clasificacionMap
+            )
+            
+            android.util.Log.d("ProductAnalysisDeserializer", "Deserialización exitosa")
+            return result
+            
+        } catch (e: Exception) {
+            android.util.Log.e("ProductAnalysisDeserializer", "Error en deserialización: ${e.message}", e)
+            // Retornar objeto por defecto en caso de error
+            return ProductAnalysis(
+                ingredientes = "Error al procesar ingredientes",
+                puedeContener = null,
+                textoDetectado = "Error al procesar texto",
+                clasificacion = emptyMap()
+            )
         }
-        
-        return ProductAnalysis(
-            ingredientes = ingredientes,
-            puedeContener = puedeContener,
-            textoDetectado = textoDetectado,
-            clasificacion = clasificacionMap
-        )
     }
 }

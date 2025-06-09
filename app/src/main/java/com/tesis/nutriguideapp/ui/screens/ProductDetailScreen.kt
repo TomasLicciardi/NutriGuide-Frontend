@@ -28,9 +28,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
 import com.tesis.nutriguideapp.model.ProductAnalysis
 import com.tesis.nutriguideapp.ui.theme.Green40
 import com.tesis.nutriguideapp.ui.theme.Yellow40
+import com.tesis.nutriguideapp.utils.CoilUtils
 import com.tesis.nutriguideapp.viewmodel.ProductDetailViewModel
 import com.tesis.nutriguideapp.viewmodel.RestriccionesViewModel
 
@@ -42,12 +44,12 @@ fun ProductDetailScreen(
     navController: NavController,
     viewModel: ProductDetailViewModel = viewModel(),
     restriccionesViewModel: RestriccionesViewModel = viewModel()
-) {
-    val product by viewModel.product.collectAsState()
+) {    val product by viewModel.product.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val analysisDetails by viewModel.analysisDetails.collectAsState()
     val userRestrictions by restriccionesViewModel.userRestrictions
+    val imageFile by viewModel.imageFile.collectAsState()
     
     val context = LocalContext.current
     var showFullAnalysis by remember { mutableStateOf(false) }
@@ -107,9 +109,8 @@ fun ProductDetailScreen(
                         .padding(padding)
                         .verticalScroll(scrollState)
                 ) {
-                    product?.let { p ->
-                        // Imagen del producto
-                        p.imageUrl?.let { url ->
+                    product?.let { p ->                        // Imagen del producto
+                        if (imageFile != null) {
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -119,13 +120,34 @@ fun ProductDetailScreen(
                                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                             ) {
                                 Image(
-                                    painter = rememberAsyncImagePainter("http://10.0.2.2:8000$url"),
+                                    painter = rememberAsyncImagePainter(imageFile),
                                     contentDescription = "Imagen del producto",
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier.fillMaxSize()
                                 )
                             }
-                        } ?: run {
+                        } else if (p.imageUrl != null) {
+                            // Si no se pudo descargar la imagen, mostrar placeholder
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
+                                    .height(120.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                                )
+                            ) {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        "Error al cargar imagen",
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )                                }
+                            }
+                        } else {
                             // Si no hay imagen, mostrar un placeholder
                             Card(
                                 modifier = Modifier
