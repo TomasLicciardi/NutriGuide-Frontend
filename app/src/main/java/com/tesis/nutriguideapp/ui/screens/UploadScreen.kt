@@ -1,5 +1,6 @@
 package com.tesis.nutriguideapp.ui.screens
 
+import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -49,8 +50,32 @@ fun UploadScreen(
     val analysisResponse by viewModel.analysisResponse
     val error by viewModel.error
     
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+    // Launcher para selector de archivos nativo (no Google Photos)
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
         viewModel.setImageUri(uri)
+    }
+    
+    // Launcher alternativo usando intent personalizado para mostrar más opciones
+    val intentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        result.data?.data?.let { uri ->
+            viewModel.setImageUri(uri)
+        }
+    }
+    
+    // Función para abrir selector con más opciones
+    fun openFileSelector() {
+        val intent = Intent().apply {
+            type = "image/*"
+            action = Intent.ACTION_GET_CONTENT
+            addCategory(Intent.CATEGORY_OPENABLE)
+            putExtra(Intent.EXTRA_LOCAL_ONLY, true)
+        }
+        val chooser = Intent.createChooser(intent, "Seleccionar imagen desde...")
+        intentLauncher.launch(chooser)
     }
 
     Scaffold(
@@ -65,7 +90,8 @@ fun UploadScreen(
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { padding ->        Column(
+    ) { padding ->
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
@@ -73,7 +99,7 @@ fun UploadScreen(
                 .verticalScroll(scrollState),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Área para la imagen
+            // Área para la imagen con mejor manejo de escala
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -92,7 +118,9 @@ fun UploadScreen(
                         Image(
                             painter = rememberAsyncImagePainter(imageUri),
                             contentDescription = "Imagen seleccionada",
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(8.dp),
                             contentScale = ContentScale.Fit
                         )
                     } else {
@@ -131,9 +159,11 @@ fun UploadScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))            // Botones de acción
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            // Botones de acción
             Button(
-                onClick = { launcher.launch("image/*") },
+                onClick = { openFileSelector() },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
@@ -143,21 +173,22 @@ fun UploadScreen(
                 )
             ) {
                 Icon(
-                    imageVector = Icons.Default.AddPhotoAlternate,
+                    imageVector = Icons.Default.FolderOpen,
                     contentDescription = "Seleccionar imagen",
                     modifier = Modifier.size(24.dp)
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = "SELECCIONAR DE GALERÍA",
+                    text = "SELECCIONAR DESDE ARCHIVOS",
                     fontWeight = FontWeight.SemiBold
                 )
             }
             
             Spacer(modifier = Modifier.height(12.dp))
             
+            // Botón alternativo para galería tradicional
             OutlinedButton(
-                onClick = { navController?.navigate("camera") },
+                onClick = { launcher.launch("image/*") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
@@ -165,16 +196,41 @@ fun UploadScreen(
                 border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
             ) {
                 Icon(
-                    imageVector = Icons.Default.Camera,
-                    contentDescription = "Usar cámara",
+                    imageVector = Icons.Default.AddPhotoAlternate,
+                    contentDescription = "Seleccionar de galería",
                     modifier = Modifier.size(24.dp),
                     tint = MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = "TOMAR FOTO",
+                    text = "SELECCIONAR DE GALERÍA",
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.primary
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            // Botón para usar cámara
+            OutlinedButton(
+                onClick = { navController?.navigate("camera") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(2.dp, Color(0xFF2196F3))
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Camera,
+                    contentDescription = "Usar cámara",
+                    modifier = Modifier.size(24.dp),
+                    tint = Color(0xFF2196F3)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = "TOMAR FOTO",
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF2196F3)
                 )
             }
             
@@ -213,7 +269,8 @@ fun UploadScreen(
                     }
                 }
             }
-              // Mostrar resultado del análisis si existe
+            
+            // Mostrar resultado del análisis si existe
             if (analysisResponse != null) {
                 Spacer(modifier = Modifier.height(24.dp))
                 
@@ -249,7 +306,8 @@ fun UploadScreen(
                                 containerColor = if (analysisResponse?.suitable == true) 
                                     Color(0xFFE8F5E9) else Color(0xFFFFEBEE)
                             )
-                        ) {                            Row(
+                        ) {
+                            Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(16.dp),
@@ -286,7 +344,10 @@ fun UploadScreen(
                         }
                         
                         // Restricciones detectadas
-                        if (analysisResponse?.restrictionsDetected?.isNotEmpty() == true) {
+                        val restrictionsNotSuitable = analysisResponse?.resultJson?.clasificacion?.filter { 
+                            !it.value.apto && !it.value.razon.isNullOrEmpty() 
+                        }
+                        if (!restrictionsNotSuitable.isNullOrEmpty()) {
                             Text(
                                 text = "Restricciones detectadas",
                                 style = MaterialTheme.typography.titleMedium,
@@ -294,7 +355,7 @@ fun UploadScreen(
                                 modifier = Modifier.padding(bottom = 8.dp)
                             )
                             
-                            analysisResponse?.restrictionsDetected?.forEach { restriction ->
+                            restrictionsNotSuitable.forEach { (restriction, details) ->
                                 Card(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -315,10 +376,20 @@ fun UploadScreen(
                                             modifier = Modifier.size(20.dp)
                                         )
                                         Spacer(modifier = Modifier.width(12.dp))
-                                        Text(
-                                            text = restriction,
-                                            style = MaterialTheme.typography.bodyMedium
-                                        )
+                                        Column {
+                                            Text(
+                                                text = restriction.replaceFirstChar { it.uppercase() },
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                            details.razon?.let { razon ->
+                                                Text(
+                                                    text = razon,
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = Color.Gray
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -327,7 +398,7 @@ fun UploadScreen(
                         }
                         
                         // Ingredientes
-                        if (analysisResponse?.ingredients?.isNotEmpty() == true) {
+                        if (!analysisResponse?.resultJson?.ingredientes.isNullOrEmpty()) {
                             Text(
                                 text = "Ingredientes detectados",
                                 style = MaterialTheme.typography.titleMedium,
@@ -341,8 +412,9 @@ fun UploadScreen(
                                 colors = CardDefaults.cardColors(
                                     containerColor = Color(0xFFF5F5F5)
                                 )
-                            ) {                                Text(
-                                    text = analysisResponse?.ingredients?.joinToString(", ") ?: "",
+                            ) {
+                                Text(
+                                    text = analysisResponse?.resultJson?.ingredientes ?: "",
                                     style = MaterialTheme.typography.bodyMedium,
                                     modifier = Modifier.padding(12.dp)
                                 )
@@ -351,10 +423,10 @@ fun UploadScreen(
                             Spacer(modifier = Modifier.height(16.dp))
                         }
                         
-                        // Texto detectado
-                        if (!analysisResponse?.textDetected.isNullOrEmpty()) {
+                        // Puede contener
+                        if (!analysisResponse?.resultJson?.puedeContener.isNullOrEmpty()) {
                             Text(
-                                text = "Texto detectado en la imagen",
+                                text = "Puede contener",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold,
                                 modifier = Modifier.padding(bottom = 8.dp)
@@ -364,11 +436,11 @@ fun UploadScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(8.dp),
                                 colors = CardDefaults.cardColors(
-                                    containerColor = Color(0xFFF5F5F5)
+                                    containerColor = Color(0xFFFFF3E0)
                                 )
                             ) {
                                 Text(
-                                    text = analysisResponse?.textDetected ?: "",
+                                    text = analysisResponse?.resultJson?.puedeContener ?: "",
                                     style = MaterialTheme.typography.bodySmall,
                                     modifier = Modifier.padding(12.dp)
                                 )
@@ -377,41 +449,66 @@ fun UploadScreen(
                             Spacer(modifier = Modifier.height(20.dp))
                         }
                         
-                        // Botón para guardar el producto
-                        Button(
-                            onClick = { 
-                                viewModel.uploadProduct(context) {
-                                    navController?.navigate("home")
+                        // Ahora el botón de guardado debe guardar directamente 
+                        // porque el análisis ya se guardó en el backend
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = Color(0xFFE8F5E9)
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = "Guardado",
+                                    tint = Color(0xFF4CAF50),
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text(
+                                        text = "Producto analizado y guardado",
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontSize = 14.sp
+                                    )
+                                    Text(
+                                        text = "ID del producto: ${analysisResponse?.productId}",
+                                        fontSize = 12.sp,
+                                        color = Color.Gray
+                                    )
                                 }
-                            },
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        // Botón para volver al inicio
+                        Button(
+                            onClick = { navController?.navigate("home") },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(56.dp),
-                            enabled = !uploading,
                             shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = GreenPrimary
                             )
                         ) {
-                            if (uploading) {
-                                CircularProgressIndicator(
-                                    color = Color.White,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Text("GUARDANDO...")
-                            } else {
-                                Icon(
-                                    imageVector = Icons.Default.Save,
-                                    contentDescription = "Guardar",
-                                    modifier = Modifier.size(24.dp)
-                                )
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Text(
-                                    text = "GUARDAR PRODUCTO",
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            }
+                            Icon(
+                                imageVector = Icons.Default.Home,
+                                contentDescription = "Volver al inicio",
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "VOLVER AL INICIO",
+                                fontWeight = FontWeight.SemiBold
+                            )
                         }
                     }
                 }

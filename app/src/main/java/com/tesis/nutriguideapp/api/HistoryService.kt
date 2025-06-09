@@ -1,5 +1,6 @@
 package com.tesis.nutriguideapp.api
 
+import com.tesis.nutriguideapp.model.HistoryItem
 import com.tesis.nutriguideapp.model.Product
 import retrofit2.Response
 import retrofit2.http.DELETE
@@ -9,10 +10,10 @@ import retrofit2.http.Query
 
 interface HistoryService {
     @GET("/history/")
-    suspend fun getUserHistory(): List<Product>
+    suspend fun getUserHistory(): List<HistoryItem>
     
     @GET("/history/")
-    suspend fun getFilteredHistory(@Query("restrictions") restrictions: String): List<Product>
+    suspend fun getFilteredHistory(@Query("restrictions") restrictions: String): List<HistoryItem>
     
     @GET("/history/product/{id}")
     suspend fun getHistoryProductDetail(@Path("id") id: Int): Product

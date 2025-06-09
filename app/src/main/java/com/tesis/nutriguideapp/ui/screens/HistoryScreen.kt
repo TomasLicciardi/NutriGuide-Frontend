@@ -21,7 +21,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.tesis.nutriguideapp.model.Product
+import com.tesis.nutriguideapp.model.HistoryItem
 import com.tesis.nutriguideapp.ui.theme.Green40
 import com.tesis.nutriguideapp.ui.theme.Yellow40
 import com.tesis.nutriguideapp.viewmodel.HistoryViewModel
@@ -183,7 +183,7 @@ fun HistoryScreen(
 
 @Composable
 fun ProductHistoryItem(
-    product: Product,
+    product: HistoryItem,
     onClick: () -> Unit,
     onDelete: (Int) -> Unit
 ) {
@@ -211,7 +211,7 @@ fun ProductHistoryItem(
                     .padding(end = 8.dp)
             ) {
                 Text(
-                    text = product.getTextDetected().take(100).ifEmpty { "Producto analizado" },
+                    text = "Producto analizado - ${product.date}",
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -222,14 +222,6 @@ fun ProductHistoryItem(
                     style = MaterialTheme.typography.bodySmall,
                     color = if (product.isSuitable) Green40 else MaterialTheme.colorScheme.error
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-                product.imageUrl?.let {
-                    Text(
-                        text = "Tiene imagen",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Green40
-                    )
-                }
             }
 
             // Botón de eliminar

@@ -3,9 +3,20 @@ package com.tesis.nutriguideapp.model
 import com.google.gson.annotations.SerializedName
 
 data class AnalysisResponse(
-    @SerializedName("ingredients") val ingredients: List<String>,
-    @SerializedName("suitable") val suitable: Boolean,
-    @SerializedName("restrictions_detected") val restrictionsDetected: List<String>,
-    @SerializedName("text_detected") val textDetected: String,
-    @SerializedName("analysis_details") val analysisDetails: Map<String, Any>
+    @SerializedName("product_id") val productId: Int,
+    @SerializedName("is_suitable") val suitable: Boolean,
+    @SerializedName("result_json") val resultJson: ProductAnalysis,
+    @SerializedName("message") val message: String? = null
+)
+
+data class ProductAnalysis(
+    @SerializedName("ingredientes") val ingredientes: String,
+    @SerializedName("puede_contener") val puedeContener: String?,
+    @SerializedName("texto_detectado") val textoDetectado: String,
+    @SerializedName("clasificacion") val clasificacion: Map<String, Restriction>
+)
+
+data class Restriction(
+    @SerializedName("apto") val apto: Boolean,
+    @SerializedName("razon") val razon: String?
 )

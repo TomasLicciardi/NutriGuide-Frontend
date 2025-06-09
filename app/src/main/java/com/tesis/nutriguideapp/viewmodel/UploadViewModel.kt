@@ -7,18 +7,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tesis.nutriguideapp.api.AnalysisService
-import com.tesis.nutriguideapp.api.ProductService
 import com.tesis.nutriguideapp.api.RetrofitInstance
 import com.tesis.nutriguideapp.model.AnalysisResponse
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
-import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
 import java.util.*
 
-class UploadViewModel : ViewModel() {    private val _imageUri = mutableStateOf<Uri?>(null)
+class UploadViewModel : ViewModel() {
+    
+    private val _imageUri = mutableStateOf<Uri?>(null)
     val imageUri: State<Uri?> = _imageUri
 
     private val _analyzing = mutableStateOf(false)
@@ -32,6 +32,7 @@ class UploadViewModel : ViewModel() {    private val _imageUri = mutableStateOf<
 
     private val _error = mutableStateOf<String?>(null)
     val error: State<String?> = _error
+    
     fun setImageUri(uri: Uri?) {
         _imageUri.value = uri
         _analysisResponse.value = null
@@ -55,18 +56,23 @@ class UploadViewModel : ViewModel() {    private val _imageUri = mutableStateOf<
                 android.util.Log.d("UploadViewModel", "Imagen preparada: ${file.length()} bytes")
                 
                 val requestFile = file.asRequestBody("image/jpeg".toMediaTypeOrNull())
-                val imagePart = MultipartBody.Part.createFormData("image", file.name, requestFile)
+                val imagePart = MultipartBody.Part.createFormData("file", file.name, requestFile)
 
                 // Llamada al API para análisis
                 android.util.Log.d("UploadViewModel", "Iniciando petición de análisis")
                 val service = RetrofitInstance.getAuthenticatedRetrofit(context)
                     .create(AnalysisService::class.java)
                 val response = service.analyzeImage(imagePart)
+                
                 if (response.isSuccessful) {
-                    _analysisResponse.value = response.body()
+                    val analysisResult = response.body()
+                    _analysisResponse.value = analysisResult
+                    android.util.Log.d("UploadViewModel", "Análisis exitoso: ${analysisResult?.productId}")
                 } else {
-                    _error.value = "Error al analizar la imagen: ${response.code()} - ${response.message()}"
+                    val errorBody = response.errorBody()?.string()
+                    _error.value = "Error al analizar la imagen: ${response.code()} - ${response.message()}\n$errorBody"
                     android.util.Log.e("UploadViewModel", "Error HTTP al analizar imagen: ${response.code()} - ${response.message()}")
+                    android.util.Log.e("UploadViewModel", "Error body: $errorBody")
                 }
             } catch (e: java.net.SocketTimeoutException) {
                 _error.value = "Tiempo de espera agotado. La petición tardó demasiado en completarse."
@@ -84,67 +90,13 @@ class UploadViewModel : ViewModel() {    private val _imageUri = mutableStateOf<
     }
 
     fun uploadProduct(context: Context, onSuccess: () -> Unit) {
-        val uri = _imageUri.value ?: run {            _error.value = "Por favor, selecciona una imagen"
-            return
-        }
-
-        val analysis = _analysisResponse.value ?: run {
-            _error.value = "Por favor, analiza la imagen primero"
-            return
-        }
-
-        _uploading.value = true
-        _error.value = null
-
-        viewModelScope.launch {
-            try {
-                // Preparar la imagen para enviar
-                android.util.Log.d("UploadViewModel", "Preparando imagen para subir")
-                val file = prepareImageFile(context, uri)
-                android.util.Log.d("UploadViewModel", "Imagen preparada para subir: ${file.length()} bytes")
-                
-                val requestFile = file.asRequestBody("image/jpeg".toMediaTypeOrNull())
-                val imagePart = MultipartBody.Part.createFormData("image", file.name, requestFile)
-
-                // Convertir el análisis a JSON
-                val gson = com.google.gson.Gson()
-                val resultJson = gson.toJson(analysis)
-                android.util.Log.d("UploadViewModel", "JSON generado: ${resultJson.take(100)}...")
-                
-                // Determinar si el producto es apto basado en el análisis
-                val isSuitable = determineIfSuitable(analysis)
-                
-                // Preparar los datos del producto
-                val jsonBody = resultJson.toRequestBody("text/plain".toMediaTypeOrNull())
-                val historyIdBody = "1".toRequestBody("text/plain".toMediaTypeOrNull()) // Por ahora es estático
-                val isSuitableBody = isSuitable.toString().toRequestBody("text/plain".toMediaTypeOrNull())
-
-                // Llamada al API para subir el producto
-                android.util.Log.d("UploadViewModel", "Iniciando petición para subir producto");              val service = RetrofitInstance.getAuthenticatedRetrofit(context)
-                    .create(ProductService::class.java)
-                val response = service.createProduct(imagePart, jsonBody, historyIdBody, isSuitableBody)
-
-                if (response.isSuccessful) {
-                    onSuccess()
-                    resetForm()
-                } else {
-                    _error.value = "Error al subir el producto: ${response.code()} - ${response.message()}"
-                    android.util.Log.e("UploadViewModel", "Error HTTP al subir producto: ${response.code()} - ${response.message()}")
-                }
-            } catch (e: java.net.SocketTimeoutException) {
-                _error.value = "Tiempo de espera agotado. La petición tardó demasiado en completarse."
-                android.util.Log.e("UploadViewModel", "Timeout al subir producto", e)
-            } catch (e: java.io.IOException) {
-                _error.value = "Error de conexión: ${e.message ?: "Verifica tu conexión a internet"}"
-                android.util.Log.e("UploadViewModel", "Error de IO al subir producto", e)
-            } catch (e: Exception) {
-                _error.value = "Error inesperado: ${e.message}"
-                android.util.Log.e("UploadViewModel", "Error general al subir producto", e)
-            } finally {
-                _uploading.value = false
-            }
-        }
-    }    private fun prepareImageFile(context: Context, uri: Uri): File {
+        // Como el backend ya guarda el producto durante el análisis,
+        // solo necesitamos navegar de vuelta al home
+        onSuccess()
+        resetForm()
+    }
+    
+    private fun prepareImageFile(context: Context, uri: Uri): File {
         // Intentar optimizar la imagen primero
         val optimizedFile = com.tesis.nutriguideapp.utils.ImageOptimizer.optimizeImage(context, uri)
         
@@ -162,12 +114,9 @@ class UploadViewModel : ViewModel() {    private val _imageUri = mutableStateOf<
         file.outputStream().use { inputStream?.copyTo(it) }
         android.util.Log.d("UploadViewModel", "Imagen original: ${file.length() / 1024} KB")
         return file
-    }    // Método para determinar si un producto es apto basado en el análisis
-    private fun determineIfSuitable(analysis: AnalysisResponse): Boolean {
-        // Usar directamente el campo 'suitable' que ya viene en la respuesta del análisis
-        return analysis.suitable
     }
-      // Resetear el formulario
+    
+    // Resetear el formulario
     private fun resetForm() {
         _imageUri.value = null
         _analysisResponse.value = null

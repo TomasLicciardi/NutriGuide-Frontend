@@ -5,14 +5,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tesis.nutriguideapp.api.HistoryService
 import com.tesis.nutriguideapp.api.RetrofitInstance
-import com.tesis.nutriguideapp.model.Product
+import com.tesis.nutriguideapp.model.HistoryItem
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class HistoryViewModel : ViewModel() {
-    private val _products = MutableStateFlow<List<Product>>(emptyList())
-    val products: StateFlow<List<Product>> = _products
+    private val _products = MutableStateFlow<List<HistoryItem>>(emptyList())
+    val products: StateFlow<List<HistoryItem>> = _products
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
@@ -44,7 +44,8 @@ class HistoryViewModel : ViewModel() {
                 val allProducts = historyService.getUserHistory()
                 _products.value = allProducts
             } catch (e: Exception) {
-                _error.value = "Error al cargar el historial: ${e.message}"            } finally {
+                _error.value = "Error al cargar el historial: ${e.message}"
+            } finally {
                 _isLoading.value = false
             }
         }

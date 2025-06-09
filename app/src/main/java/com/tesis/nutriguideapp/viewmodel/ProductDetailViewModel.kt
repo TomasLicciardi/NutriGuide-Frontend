@@ -3,7 +3,7 @@ package com.tesis.nutriguideapp.viewmodel
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.tesis.nutriguideapp.api.ProductService
+import com.tesis.nutriguideapp.api.HistoryService
 import com.tesis.nutriguideapp.api.RetrofitInstance
 import com.tesis.nutriguideapp.model.Product
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,8 +29,8 @@ class ProductDetailViewModel : ViewModel() {
             _isLoading.value = true
             _error.value = null
             try {
-                val productService = RetrofitInstance.getAuthenticatedRetrofit(context).create(ProductService::class.java)
-                val productData = productService.getProductById(productId)
+                val historyService = RetrofitInstance.getAuthenticatedRetrofit(context).create(HistoryService::class.java)
+                val productData = historyService.getHistoryProductDetail(productId)
                 _product.value = productData
                 
                 // Analizar el resultJson para extraer información estructurada
@@ -42,15 +42,12 @@ class ProductDetailViewModel : ViewModel() {
                     resultMap["Ingredientes"] = productData.getIngredients()
                     resultMap["Restricciones Detectadas"] = productData.getRestrictionsDetected()
                     resultMap["Texto Detectado"] = productData.getTextDetected()
-                    
-                    // Mantener compatibilidad con el código existente
-                    productData.resultJson.let { json ->
-                        if (json.contains("gluten", ignoreCase = true)) {
-                            resultMap["Contiene Gluten"] = true
-                        }
-                        if (json.contains("lactosa", ignoreCase = true)) {
-                            resultMap["Contiene Lactosa"] = true
-                        }
+                      // Analizar restricciones específicas
+                    val restrictions = productData.getRestrictionsDetected()
+                    // Las restricciones vienen como un mapa, donde la clave es el nombre de la restricción
+                    productData.resultJson.clasificacion.forEach { (restrictionName, restriction) ->
+                        val isRestricted = !restriction.apto
+                        resultMap["Contiene $restrictionName"] = isRestricted
                     }
                     
                     _analysisDetails.value = resultMap
@@ -69,11 +66,10 @@ class ProductDetailViewModel : ViewModel() {
         val product = _product.value ?: return
         val detectedRestrictions = product.getRestrictionsDetected()
         
-        // Verificar si hay alguna restricción del usuario en los ingredientes detectados
-        val isProductSuitable = detectedRestrictions.none { detectedRestriction ->
-            userRestrictions.any { userRestriction ->
-                detectedRestriction.contains(userRestriction, ignoreCase = true)
-            }
+        // Verificar si hay alguna restricción del usuario que no sea apta en el producto
+        // Como no tenemos el nombre de la restricción directamente, verificamos si hay restricciones no aptas
+        val isProductSuitable = detectedRestrictions.all { restriction ->
+            restriction.apto
         }
         
         // Actualizar el mapa de análisis con esta información

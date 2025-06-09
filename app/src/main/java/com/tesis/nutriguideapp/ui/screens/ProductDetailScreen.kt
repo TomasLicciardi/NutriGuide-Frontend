@@ -22,11 +22,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
+import com.tesis.nutriguideapp.model.ProductAnalysis
 import com.tesis.nutriguideapp.ui.theme.Green40
 import com.tesis.nutriguideapp.ui.theme.Yellow40
 import com.tesis.nutriguideapp.viewmodel.ProductDetailViewModel
@@ -47,13 +49,14 @@ fun ProductDetailScreen(
     val analysisDetails by viewModel.analysisDetails.collectAsState()
     val userRestrictions by restriccionesViewModel.userRestrictions
     
+    val context = LocalContext.current
     var showFullAnalysis by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
     
     // Cargar el producto y las restricciones del usuario cuando se inicia la pantalla
     LaunchedEffect(productId) {
-        restriccionesViewModel.getUserRestrictions(navController.context)
-        viewModel.loadProduct(navController.context, productId)
+        restriccionesViewModel.getUserRestrictions(context)
+        viewModel.loadProduct(context, productId)
     }
     
     // Verificar si el producto es adecuado para el usuario cuando se cargan ambos datos
@@ -234,10 +237,9 @@ fun ProductDetailScreen(
                                     visible = showFullAnalysis,
                                     enter = fadeIn() + expandVertically(),
                                     exit = fadeOut() + shrinkVertically()
-                                ) {
-                                    Column {
+                                ) {                                    Column {
                                         Spacer(modifier = Modifier.height(8.dp))
-                                        Divider()
+                                        HorizontalDivider()
                                         Spacer(modifier = Modifier.height(8.dp))
                                         Text(
                                             text = "Análisis completo:",
@@ -245,7 +247,7 @@ fun ProductDetailScreen(
                                             fontWeight = FontWeight.SemiBold
                                         )
                                         Spacer(modifier = Modifier.height(8.dp))
-                                        Surface(
+                                    Surface(
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .padding(4.dp),
@@ -253,7 +255,7 @@ fun ProductDetailScreen(
                                             shape = RoundedCornerShape(8.dp)
                                         ) {
                                             Text(
-                                                text = p.resultJson,
+                                                text = formatProductAnalysis(p.resultJson),
                                                 style = MaterialTheme.typography.bodySmall,
                                                 modifier = Modifier.padding(12.dp)
                                             )
@@ -341,5 +343,35 @@ fun ProductDetailScreen(
             }
         }
     )
+}
+
+/**
+ * Convierte un objeto ProductAnalysis a un string formateado para mostrar en la UI
+ */
+private fun formatProductAnalysis(productAnalysis: ProductAnalysis): String {
+    return buildString {
+        appendLine("📝 Texto Detectado:")
+        appendLine(productAnalysis.textoDetectado)
+        appendLine()
+        
+        appendLine("🧪 Ingredientes:")
+        appendLine(productAnalysis.ingredientes)
+        appendLine()
+        
+        if (!productAnalysis.puedeContener.isNullOrBlank()) {
+            appendLine("⚠️ Puede contener:")
+            appendLine(productAnalysis.puedeContener)
+            appendLine()
+        }
+        
+        appendLine("📊 Clasificación por restricciones:")
+        productAnalysis.clasificacion.forEach { (restriccion, resultado) ->
+            val emoji = if (resultado.apto) "✅" else "❌"
+            appendLine("$emoji $restriccion: ${if (resultado.apto) "Apto" else "No apto"}")
+            if (!resultado.razon.isNullOrBlank()) {
+                appendLine("   Razón: ${resultado.razon}")
+            }
+        }
+    }
 }
 

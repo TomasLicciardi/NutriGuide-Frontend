@@ -11,6 +11,6 @@ interface AnalysisService {
     @Multipart
     @POST("/analysis/")
     suspend fun analyzeImage(
-        @Part image: MultipartBody.Part
+        @Part file: MultipartBody.Part
     ): Response<AnalysisResponse>
 }
