@@ -35,10 +35,21 @@ class RestriccionesViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val service = RetrofitInstance.getAuthenticatedRetrofit(context).create(UserService::class.java)
-                val restrictions = service.getUserRestrictions()
-                _userRestrictions.value = restrictions.toSet()
+                val response = service.getUserRestrictions()
+                
+                com.tesis.nutriguideapp.utils.ApiErrorHandler.processResponse(
+                    response = response,
+                    tag = "RestriccionesViewModel",
+                    onSuccess = { restrictions ->
+                        _userRestrictions.value = restrictions.toSet()
+                    },
+                    onError = { errorMessage ->
+                        _error.value = errorMessage
+                    }
+                )
             } catch (e: Exception) {
-                _error.value = "Error al cargar restricciones: ${e.message}"
+                val errorMessage = com.tesis.nutriguideapp.utils.ApiErrorHandler.handleApiError(e, "RestriccionesViewModel")
+                _error.value = errorMessage
             } finally {
                 _loading.value = false
             }
@@ -64,14 +75,20 @@ class RestriccionesViewModel : ViewModel() {
                 val request = UserRestrictionsRequest(_userRestrictions.value.toList())
                 val response = service.updateUserRestrictions(request)
                 
-                if (response.isSuccessful) {
-                    _success.value = "Restricciones guardadas correctamente"
-                    onSuccess()
-                } else {
-                    _error.value = "Error al guardar: ${response.message()}"
-                }
+                com.tesis.nutriguideapp.utils.ApiErrorHandler.processResponse(
+                    response = response,
+                    tag = "RestriccionesViewModel",
+                    onSuccess = { _ ->
+                        _success.value = "Restricciones guardadas correctamente"
+                        onSuccess()
+                    },
+                    onError = { errorMessage ->
+                        _error.value = errorMessage
+                    }
+                )
             } catch (e: Exception) {
-                _error.value = "Error al guardar restricciones: ${e.message}"
+                val errorMessage = com.tesis.nutriguideapp.utils.ApiErrorHandler.handleApiError(e, "RestriccionesViewModel")
+                _error.value = errorMessage
             } finally {
                 _loading.value = false
             }

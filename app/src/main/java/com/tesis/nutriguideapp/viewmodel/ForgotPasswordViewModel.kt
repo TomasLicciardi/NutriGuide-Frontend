@@ -39,23 +39,33 @@ class ForgotPasswordViewModel : ViewModel() {
         _loading.value = true
         _error.value = null
         _success.value = null
-
         viewModelScope.launch {
             try {
                 val service = RetrofitInstance.retrofit.create(UserService::class.java)
                 val response = service.forgotPassword(mapOf("email" to _email.value))
                 
-                if (response.isSuccessful) {
-                    _success.value = "Se ha enviado un correo con instrucciones para restablecer tu contraseña"
-                    // Normalmente aquí recibiríamos un token de restablecimiento
-                    // En una aplicación real, este token llegaría por correo
-                    val dummyToken = "reset-token-123456" // Esto es solo para demostración
-                    onEmailSent(dummyToken)
-                } else {
-                    _error.value = "Error al enviar el correo de recuperación"
-                }
+                com.tesis.nutriguideapp.utils.ApiErrorHandler.processResponse(
+                    response = response,
+                    tag = "ForgotPasswordViewModel",
+                    onSuccess = { _ ->
+                        _success.value = "Se ha enviado un correo con instrucciones para restablecer tu contraseña"
+                        // Normalmente aquí recibiríamos un token de restablecimiento
+                        // En una aplicación real, este token llegaría por correo
+                        val dummyToken = "reset-token-123456" // Esto es solo para demostración
+                        onEmailSent(dummyToken)
+                    },
+                    onError = { errorMessage ->
+                        // Si es un error 404, es porque el email no existe
+                        if (response.code() == 404) {
+                            _error.value = "No existe una cuenta con este correo electrónico"
+                        } else {
+                            _error.value = errorMessage
+                        }
+                    }
+                )
             } catch (e: Exception) {
-                _error.value = "Error: ${e.message}"
+                val errorMessage = com.tesis.nutriguideapp.utils.ApiErrorHandler.handleApiError(e, "ForgotPasswordViewModel")
+                _error.value = errorMessage
             } finally {
                 _loading.value = false
             }

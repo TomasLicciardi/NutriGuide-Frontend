@@ -341,11 +341,16 @@ fun UploadScreen(
                                     )
                                 }
                             }
-                        }
-                        
-                        // Restricciones detectadas
-                        val restrictionsNotSuitable = analysisResponse?.resultJson?.clasificacion?.filter { 
-                            !it.value.apto && !it.value.razon.isNullOrEmpty() 
+                        }                        // Restricciones detectadas
+                        val restrictionsNotSuitable = remember {
+                            try {
+                                analysisResponse?.resultJson?.clasificacion?.filter { 
+                                    !it.value.apto && !it.value.razon.isNullOrEmpty() 
+                                }
+                            } catch (e: Exception) {
+                                android.util.Log.e("UploadScreen", "Error al filtrar restricciones: ${e.message}")
+                                null
+                            }
                         }
                         if (!restrictionsNotSuitable.isNullOrEmpty()) {
                             Text(
@@ -395,58 +400,163 @@ fun UploadScreen(
                             }
                             
                             Spacer(modifier = Modifier.height(16.dp))
+                        }                        // Ingredientes
+                        val ingredientesState = remember {
+                            try {
+                                val ingredientes = analysisResponse?.resultJson?.ingredientes
+                                if (!ingredientes.isNullOrEmpty()) {
+                                    IngredientState.Available(ingredientes)
+                                } else {
+                                    IngredientState.Empty
+                                }
+                            } catch (e: Exception) {
+                                android.util.Log.e("UploadScreen", "Error al procesar ingredientes: ${e.message}", e)
+                                IngredientState.Error("Error al procesar los ingredientes: ${e.message}")
+                            }
                         }
                         
-                        // Ingredientes
-                        if (!analysisResponse?.resultJson?.ingredientes.isNullOrEmpty()) {
-                            Text(
-                                text = "Ingredientes detectados",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                modifier = Modifier.padding(bottom = 8.dp)
-                            )
-                            
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(8.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = Color(0xFFF5F5F5)
-                                )
-                            ) {
+                        when (ingredientesState) {
+                            is IngredientState.Available -> {
                                 Text(
-                                    text = analysisResponse?.resultJson?.ingredientes ?: "",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    modifier = Modifier.padding(12.dp)
+                                    text = "Ingredientes detectados",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.padding(bottom = 8.dp)
                                 )
+                                
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = Color(0xFFF5F5F5)
+                                    )
+                                ) {
+                                    Text(
+                                        text = ingredientesState.ingredientes,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        modifier = Modifier.padding(12.dp)
+                                    )
+                                }
+                                
+                                Spacer(modifier = Modifier.height(16.dp))
                             }
-                            
-                            Spacer(modifier = Modifier.height(16.dp))
+                            is IngredientState.Empty -> {
+                                Text(
+                                    text = "Ingredientes",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.padding(bottom = 8.dp)
+                                )
+                                
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = Color(0xFFFFF3E0)
+                                    )
+                                ) {
+                                    Text(
+                                        text = "No se detectaron ingredientes",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        modifier = Modifier.padding(12.dp)
+                                    )
+                                }
+                                
+                                Spacer(modifier = Modifier.height(16.dp))
+                            }
+                            is IngredientState.Error -> {
+                                Text(
+                                    text = "Error en ingredientes",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.padding(bottom = 8.dp)
+                                )
+                                
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = Color(0xFFFFEBEE)
+                                    )
+                                ) {
+                                    Text(
+                                        text = ingredientesState.errorMessage,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        modifier = Modifier.padding(12.dp)
+                                    )
+                                }
+                                
+                                Spacer(modifier = Modifier.height(16.dp))
+                            }
                         }
                         
                         // Puede contener
-                        if (!analysisResponse?.resultJson?.puedeContener.isNullOrEmpty()) {
-                            Text(
-                                text = "Puede contener",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                modifier = Modifier.padding(bottom = 8.dp)
-                            )
-                            
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(8.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = Color(0xFFFFF3E0)
-                                )
-                            ) {
-                                Text(
-                                    text = analysisResponse?.resultJson?.puedeContener ?: "",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    modifier = Modifier.padding(12.dp)
-                                )
+                        val puedeContenerState = remember {
+                            try {
+                                val puedeContener = analysisResponse?.resultJson?.puedeContener
+                                if (!puedeContener.isNullOrEmpty()) {
+                                    PuedeContenerState.Available(puedeContener)
+                                } else {
+                                    PuedeContenerState.Empty
+                                }
+                            } catch (e: Exception) {
+                                android.util.Log.e("UploadScreen", "Error al procesar 'puede contener': ${e.message}", e)
+                                PuedeContenerState.Error("Error al procesar 'puede contener': ${e.message}")
                             }
-                            
-                            Spacer(modifier = Modifier.height(20.dp))
+                        }
+                        
+                        when (puedeContenerState) {
+                            is PuedeContenerState.Available -> {
+                                Text(
+                                    text = "Puede contener",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.padding(bottom = 8.dp)
+                                )
+                                
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = Color(0xFFFFF3E0)
+                                    )
+                                ) {
+                                    Text(
+                                        text = puedeContenerState.contenido,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        modifier = Modifier.padding(12.dp)
+                                    )
+                                }
+                                
+                                Spacer(modifier = Modifier.height(16.dp))
+                            }
+                            is PuedeContenerState.Empty -> {
+                                // No hacer nada, simplemente no mostrar sección
+                            }
+                            is PuedeContenerState.Error -> {
+                                Text(
+                                    text = "Error en 'puede contener'",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.padding(bottom = 8.dp)
+                                )
+                                
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = Color(0xFFFFEBEE)
+                                    )
+                                ) {
+                                    Text(
+                                        text = puedeContenerState.errorMessage,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        modifier = Modifier.padding(12.dp)
+                                    )
+                                }
+                                
+                                Spacer(modifier = Modifier.height(16.dp))
+                            }
                         }
                         
                         // Ahora el botón de guardado debe guardar directamente 
@@ -522,4 +632,18 @@ fun UploadScreen(
             }
         }
     }
+}
+
+// Estados para manejar diferentes casos de ingredientes
+sealed class IngredientState {
+    data class Available(val ingredientes: String) : IngredientState()
+    data class Error(val errorMessage: String) : IngredientState()
+    object Empty : IngredientState()
+}
+
+// Estados para manejar diferentes casos de "puede contener"
+sealed class PuedeContenerState {
+    data class Available(val contenido: String) : PuedeContenerState()
+    object Empty : PuedeContenerState()
+    data class Error(val errorMessage: String) : PuedeContenerState()
 }

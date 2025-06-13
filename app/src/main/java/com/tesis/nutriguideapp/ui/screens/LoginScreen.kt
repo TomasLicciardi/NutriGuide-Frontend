@@ -138,21 +138,38 @@ fun LoginScreen(
                     // Botón login
                     Button(
                         onClick = {
-                            viewModel.login(
-                                context = context,
-                                onSuccess = {
-                                    coroutineScope.launch {
-                                        snackbarHostState.showSnackbar("Login exitoso")
-                                        kotlinx.coroutines.delay(300)
-                                        onLoginSuccess()
+                            try {
+                                viewModel.login(
+                                    context = context,
+                                    onSuccess = {
+                                        coroutineScope.launch {
+                                            try {
+                                                snackbarHostState.showSnackbar("Login exitoso")
+                                                kotlinx.coroutines.delay(300)
+                                                onLoginSuccess()
+                                            } catch (e: Exception) {
+                                                android.util.Log.e("LoginScreen", "Error en callback de éxito", e)
+                                                snackbarHostState.showSnackbar("Error al navegar: ${e.message}")
+                                            }
+                                        }
+                                    },
+                                    onError = { error ->
+                                        coroutineScope.launch {
+                                            try {
+                                                android.util.Log.e("LoginScreen", "Error de login: $error")
+                                                snackbarHostState.showSnackbar(error)
+                                            } catch (e: Exception) {
+                                                android.util.Log.e("LoginScreen", "Error al mostrar mensaje de error", e)
+                                            }
+                                        }
                                     }
-                                },
-                                onError = { error ->
-                                    coroutineScope.launch {
-                                        snackbarHostState.showSnackbar(error)
-                                    }
+                                )
+                            } catch (e: Exception) {
+                                android.util.Log.e("LoginScreen", "Excepción en proceso de login", e)
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar("Error inesperado: ${e.message}")
                                 }
-                            )
+                            }
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -195,12 +212,34 @@ fun LoginScreen(
                         Text("¿No tienes cuenta?")
                         TextButton(onClick = { onNavigateToRegister() }) {
                             Text("Regístrate")
+                        }                    }
+                }
+            }
+            
+            // Botón oculto para prueba de errores (siempre visible para desarrollo)
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                TextButton(
+                    onClick = {
+                        coroutineScope.launch {
+                            val errorTypes = listOf("401", "404", "422", "timeout", "connection", "json", "http")
+                            val errorType = errorTypes.random()
+                            viewModel.testErrorHandling(errorType) { errorMessage ->
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar("TEST ERROR ($errorType): $errorMessage")
+                                }
+                            }
                         }
-                    }
+                    },
+                    modifier = Modifier
+                        .padding(top = 8.dp)
+                        .size(20.dp)
+                        .align(Alignment.End)
+                ) {
+                    Text("T", fontSize = 10.sp)
                 }
             }
         }
-
+        
         // Snackbar para errores y confirmaciones
         SnackbarHost(
             hostState = snackbarHostState,

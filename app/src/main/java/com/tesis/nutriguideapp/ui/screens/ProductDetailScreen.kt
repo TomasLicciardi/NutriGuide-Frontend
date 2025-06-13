@@ -372,26 +372,43 @@ fun ProductDetailScreen(
  */
 private fun formatProductAnalysis(productAnalysis: ProductAnalysis): String {
     return buildString {
-        appendLine("📝 Texto Detectado:")
-        appendLine(productAnalysis.textoDetectado)
-        appendLine()
-        
-        appendLine("🧪 Ingredientes:")
-        appendLine(productAnalysis.ingredientes)
-        appendLine()
-        
-        if (!productAnalysis.puedeContener.isNullOrBlank()) {
-            appendLine("⚠️ Puede contener:")
-            appendLine(productAnalysis.puedeContener)
+        try {
+            appendLine("📝 Texto Detectado:")
+            appendLine(productAnalysis.textoDetectado.ifEmpty { "No disponible" })
             appendLine()
-        }
-        
-        appendLine("📊 Clasificación por restricciones:")
-        productAnalysis.clasificacion.forEach { (restriccion, resultado) ->
-            val emoji = if (resultado.apto) "✅" else "❌"
-            appendLine("$emoji $restriccion: ${if (resultado.apto) "Apto" else "No apto"}")
-            if (!resultado.razon.isNullOrBlank()) {
-                appendLine("   Razón: ${resultado.razon}")
+            
+            appendLine("🧪 Ingredientes:")
+            appendLine(productAnalysis.ingredientes.ifEmpty { "No disponible" })
+            appendLine()
+            
+            if (!productAnalysis.puedeContener.isNullOrBlank()) {
+                appendLine("⚠️ Puede contener:")
+                appendLine(productAnalysis.puedeContener)
+                appendLine()
+            }
+            
+            appendLine("📊 Clasificación por restricciones:")
+            if (productAnalysis.clasificacion.isEmpty()) {
+                appendLine("No hay información de restricciones disponible")
+            } else {
+                productAnalysis.clasificacion.forEach { (restriccion, resultado) ->
+                    val emoji = if (resultado.apto) "✅" else "❌"
+                    appendLine("$emoji $restriccion: ${if (resultado.apto) "Apto" else "No apto"}")
+                    if (!resultado.razon.isNullOrBlank()) {
+                        appendLine("   Razón: ${resultado.razon}")
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            appendLine("⚠️ Error al formatear análisis: ${e.message}")
+            appendLine()
+            appendLine("Datos parciales disponibles:")
+            appendLine("Ingredientes: ${productAnalysis.ingredientes.take(100)}")
+            if (!productAnalysis.puedeContener.isNullOrBlank()) {
+                appendLine("Puede contener: ${productAnalysis.puedeContener.take(100)}")
+            }
+            if (productAnalysis.clasificacion.isNotEmpty()) {
+                appendLine("Restricciones: ${productAnalysis.clasificacion.keys.joinToString(", ")}")
             }
         }
     }

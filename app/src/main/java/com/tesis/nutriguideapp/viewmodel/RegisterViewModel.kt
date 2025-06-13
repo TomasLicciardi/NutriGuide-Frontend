@@ -102,39 +102,54 @@ class RegisterViewModel : ViewModel() {
                 try {
                     android.util.Log.d("RegisterViewModel", "Enviando solicitud de registro")
                     val registerResponse = service.register(request)
-                    android.util.Log.d("RegisterViewModel", "Registro exitoso: $registerResponse")
                     
-                    // Inmediatamente después del registro exitoso, hacer login automático
-                    try {
-                        android.util.Log.d("RegisterViewModel", "Iniciando login automático")
-                        val loginResponse = service.login(AuthRequest(_email.value, _password.value))
-                        android.util.Log.d("RegisterViewModel", "Login automático exitoso")
-                        
-                        // Guardar token
-                        TokenManager(context).saveToken(loginResponse.accessToken)
-                        
-                        // Ir directamente a la aplicación
-                        onSuccess()
-                    } catch (e: Exception) {
-                        android.util.Log.e("RegisterViewModel", "Error en login automático", e)
-                        onError("Registro exitoso, pero error al iniciar sesión automáticamente. Por favor, inicia sesión manualmente.")
-                    }
-                    
-                } catch (e: retrofit2.HttpException) {
-                    // Captura específicamente errores HTTP
-                    android.util.Log.e("RegisterViewModel", "Error HTTP: ${e.code()}", e)
-                    if (e.code() == 409) {
-                        onError("El correo electrónico ya está registrado. Por favor, usa otro correo.")
-                    } else {
-                        onError("Error del servidor: ${e.message()} (${e.code()})")
-                    }
-                } catch (e: Exception) {
-                    android.util.Log.e("RegisterViewModel", "Error general en registro", e)
-                    onError("Error: ${e.message ?: "Error al registrar. Inténtalo de nuevo."}")
+                    // Usar ApiErrorHandler para procesar la respuesta de registro
+                    com.tesis.nutriguideapp.utils.ApiErrorHandler.processResponse(
+                        response = registerResponse,
+                        tag = "RegisterViewModel",
+                        onSuccess = { _ ->
+                            android.util.Log.d("RegisterViewModel", "Registro exitoso")
+                            
+                            // Inmediatamente después del registro exitoso, hacer login automático
+                            try {
+                                android.util.Log.d("RegisterViewModel", "Iniciando login automático")
+                                val loginResponse = service.login(AuthRequest(_email.value, _password.value))
+                                
+                                // Usar ApiErrorHandler para procesar la respuesta de login
+                                com.tesis.nutriguideapp.utils.ApiErrorHandler.processResponse(
+                                    response = loginResponse,
+                                    tag = "RegisterViewModel/Login",
+                                    onSuccess = { authResponse ->
+                                        android.util.Log.d("RegisterViewModel", "Login automático exitoso")
+                                        
+                                        // Guardar token
+                                        TokenManager(context).saveToken(authResponse.accessToken)
+                                        
+                                        // Ir directamente a la aplicación
+                                        onSuccess()
+                                    },
+                                    onError = { _ ->
+                                        android.util.Log.e("RegisterViewModel", "Error en login automático")
+                                        onError("Registro exitoso, pero error al iniciar sesión automáticamente. Por favor, inicia sesión manualmente.")
+                                    }
+                                )
+                            } catch (e: Exception) {
+                                android.util.Log.e("RegisterViewModel", "Error en login automático", e)
+                                onError("Registro exitoso, pero error al iniciar sesión automáticamente. Por favor, inicia sesión manualmente.")
+                            }
+                        },
+                        onError = { errorMessage ->
+                            onError(errorMessage)
+                        }
+                    )
+                      } catch (e: Exception) {
+                    // Usar nuestro ApiErrorHandler para manejar cualquier tipo de error
+                    val errorMessage = com.tesis.nutriguideapp.utils.ApiErrorHandler.handleApiError(e, "RegisterViewModel")
+                    onError(errorMessage)
                 }
             } catch (e: Exception) {
-                android.util.Log.e("RegisterViewModel", "Error de conexión", e)
-                onError("Error de conexión: ${e.message ?: "Verifica tu conexión a internet"}")
+                val errorMessage = com.tesis.nutriguideapp.utils.ApiErrorHandler.handleApiError(e, "RegisterViewModel")
+                onError(errorMessage)
             } finally {
                 _loading.value = false
             }

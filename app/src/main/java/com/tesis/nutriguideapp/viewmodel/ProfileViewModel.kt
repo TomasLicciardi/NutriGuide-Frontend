@@ -32,16 +32,27 @@ class ProfileViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val service = RetrofitInstance.getAuthenticatedRetrofit(context).create(UserService::class.java)
-                val profile = service.getUserProfile()
+                val response = service.getUserProfile()
                 
-                _username.value = profile.username
-                _email.value = profile.email
-                _restrictions.value = profile.restrictions
-                
-                android.util.Log.d("ProfileViewModel", "Perfil cargado: ${profile.username}, restricciones: ${profile.restrictions.size}")
+                com.tesis.nutriguideapp.utils.ApiErrorHandler.processResponse(
+                    response = response,
+                    tag = "ProfileViewModel",
+                    onSuccess = { profile ->
+                        _username.value = profile.username
+                        _email.value = profile.email
+                        _restrictions.value = profile.restrictions
+                        
+                        android.util.Log.d("ProfileViewModel", "Perfil cargado: ${profile.username}, restricciones: ${profile.restrictions.size}")
+                    },
+                    onError = { errorMessage ->
+                        android.util.Log.e("ProfileViewModel", "Error en respuesta: $errorMessage")
+                        _error.value = errorMessage
+                    }
+                )
             } catch (e: Exception) {
+                val errorMessage = com.tesis.nutriguideapp.utils.ApiErrorHandler.handleApiError(e, "ProfileViewModel")
                 android.util.Log.e("ProfileViewModel", "Error al cargar perfil", e)
-                _error.value = "Error al cargar perfil: ${e.message}"
+                _error.value = errorMessage
             } finally {
                 _loading.value = false
             }

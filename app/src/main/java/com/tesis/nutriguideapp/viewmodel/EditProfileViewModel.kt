@@ -45,11 +45,22 @@ class EditProfileViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val service = RetrofitInstance.getAuthenticatedRetrofit(context).create(UserService::class.java)
-                val profile = service.getUserProfile()
-                _username.value = profile.username
-                _email.value = profile.email
+                val response = service.getUserProfile()
+                
+                com.tesis.nutriguideapp.utils.ApiErrorHandler.processResponse(
+                    response = response,
+                    tag = "EditProfileViewModel",
+                    onSuccess = { profile ->
+                        _username.value = profile.username
+                        _email.value = profile.email
+                    },
+                    onError = { errorMessage ->
+                        _error.value = errorMessage
+                    }
+                )
             } catch (e: Exception) {
-                _error.value = "Error al cargar perfil: ${e.message}"
+                val errorMessage = com.tesis.nutriguideapp.utils.ApiErrorHandler.handleApiError(e, "EditProfileViewModel")
+                _error.value = errorMessage
             } finally {
                 _loading.value = false
             }
@@ -98,18 +109,29 @@ class EditProfileViewModel : ViewModel() {
                 val request = PasswordChangeRequest(_currentPassword.value, _newPassword.value)
                 val response = service.changePassword(request)
                 
-                if (response.isSuccessful) {
-                    _success.value = "Contraseña cambiada correctamente"
-                    // Limpiar campos
-                    _currentPassword.value = ""
-                    _newPassword.value = ""
-                    _confirmPassword.value = ""
-                    onSuccess()
-                } else {
-                    _error.value = "Error al cambiar la contraseña: contraseña actual incorrecta"
-                }
+                com.tesis.nutriguideapp.utils.ApiErrorHandler.processResponse(
+                    response = response,
+                    tag = "EditProfileViewModel",
+                    onSuccess = { _ ->
+                        _success.value = "Contraseña cambiada correctamente"
+                        // Limpiar campos
+                        _currentPassword.value = ""
+                        _newPassword.value = ""
+                        _confirmPassword.value = ""
+                        onSuccess()
+                    },
+                    onError = { errorMessage ->
+                        // Si es un error 422, dar un mensaje más específico
+                        if (response.code() == 422) {
+                            _error.value = "Contraseña actual incorrecta"
+                        } else {
+                            _error.value = errorMessage
+                        }
+                    }
+                )
             } catch (e: Exception) {
-                _error.value = "Error: ${e.message}"
+                val errorMessage = com.tesis.nutriguideapp.utils.ApiErrorHandler.handleApiError(e, "EditProfileViewModel")
+                _error.value = errorMessage
             } finally {
                 _loading.value = false
             }

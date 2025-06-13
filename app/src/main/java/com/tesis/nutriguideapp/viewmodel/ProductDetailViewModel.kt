@@ -63,30 +63,72 @@ class ProductDetailViewModel : ViewModel() {
                 } else {
                     android.util.Log.d("ProductDetailViewModel", "No hay imagen URL para este producto")
                 }
-                
-                // Analizar el resultJson para extraer información estructurada
+                  // Analizar el resultJson para extraer información estructurada
                 try {
                     android.util.Log.d("ProductDetailViewModel", "Analizando datos del producto...")
                     // Usar los métodos del modelo Product para extraer datos
                     val resultMap = mutableMapOf<String, Any>()
                     
-                    // Extraer información usando los métodos auxiliares de Product
-                    resultMap["Ingredientes"] = productData.getIngredients()
-                    resultMap["Restricciones Detectadas"] = productData.getRestrictionsDetected()
-                    resultMap["Texto Detectado"] = productData.getTextDetected()
-                      // Analizar restricciones específicas
-                    val restrictions = productData.getRestrictionsDetected()
-                    // Las restricciones vienen como un mapa, donde la clave es el nombre de la restricción
-                    productData.resultJson.clasificacion.forEach { (restrictionName, restriction) ->
-                        val isRestricted = !restriction.apto
-                        resultMap["Contiene $restrictionName"] = isRestricted
+                    try {
+                        // Extraer información usando los métodos auxiliares de Product
+                        val ingredientes = productData.getIngredients()
+                        resultMap["Ingredientes"] = ingredientes
+                        android.util.Log.d("ProductDetailViewModel", "Ingredientes procesados: ${ingredientes.size}")
+                    } catch (e: Exception) {
+                        android.util.Log.e("ProductDetailViewModel", "Error al procesar ingredientes: ${e.message}", e)
+                        resultMap["Error en ingredientes"] = true
+                    }
+                    
+                    try {
+                        val restricciones = productData.getRestrictionsDetected()
+                        resultMap["Restricciones Detectadas"] = restricciones
+                        android.util.Log.d("ProductDetailViewModel", "Restricciones procesadas: ${restricciones.size}")
+                    } catch (e: Exception) {
+                        android.util.Log.e("ProductDetailViewModel", "Error al procesar restricciones: ${e.message}", e)
+                        resultMap["Error en restricciones"] = true
+                    }
+                    
+                    try {
+                        val textoDetectado = productData.getTextDetected()
+                        resultMap["Texto Detectado"] = textoDetectado
+                        android.util.Log.d("ProductDetailViewModel", "Texto detectado procesado: ${textoDetectado.take(50)}...")
+                    } catch (e: Exception) {
+                        android.util.Log.e("ProductDetailViewModel", "Error al procesar texto detectado: ${e.message}", e)
+                        resultMap["Error en texto detectado"] = true
+                    }
+                    
+                    // Analizar restricciones específicas
+                    try {
+                        // Verificar que clasificacion no sea null
+                        if (productData.resultJson.clasificacion.isNotEmpty()) {
+                            android.util.Log.d("ProductDetailViewModel", "Analizando clasificaciones: ${productData.resultJson.clasificacion.keys}")
+                            productData.resultJson.clasificacion.forEach { (restrictionName, restriction) ->
+                                try {
+                                    val isRestricted = !restriction.apto
+                                    resultMap["Contiene $restrictionName"] = isRestricted
+                                } catch (e: Exception) {
+                                    android.util.Log.e("ProductDetailViewModel", "Error al procesar restricción $restrictionName: ${e.message}", e)
+                                }
+                            }
+                        } else {
+                            android.util.Log.w("ProductDetailViewModel", "No hay clasificaciones disponibles en el producto")
+                            resultMap["Sin restricciones analizadas"] = true
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.e("ProductDetailViewModel", "Error al procesar clasificaciones: ${e.message}", e)
+                        resultMap["Error al procesar clasificaciones"] = true
                     }
                     
                     _analysisDetails.value = resultMap
-                    android.util.Log.d("ProductDetailViewModel", "Análisis de datos completado")
+                    android.util.Log.d("ProductDetailViewModel", "Análisis de datos completado con ${resultMap.size} elementos")
                 } catch (e: Exception) {
                     android.util.Log.e("ProductDetailViewModel", "Error al analizar detalles del producto: ${e.message}", e)
                     _error.value = "Error al analizar detalles del producto: ${e.message}"
+                    // Agregar un análisis mínimo para evitar pantalla en blanco
+                    _analysisDetails.value = mapOf(
+                        "Error" to "No se pudieron cargar los detalles del análisis",
+                        "Mensaje" to (e.message ?: "Error desconocido")
+                    )
                 }
                 
             } catch (e: Exception) {
@@ -96,20 +138,51 @@ class ProductDetailViewModel : ViewModel() {
                 _isLoading.value = false
             }
         }
-    }// Método para verificar si un producto es adecuado para el usuario basado en sus restricciones
+    }    // Método para verificar si un producto es adecuado para el usuario basado en sus restricciones
     fun checkSuitabilityForUser(userRestrictions: List<String>) {
-        val product = _product.value ?: return
-        val detectedRestrictions = product.getRestrictionsDetected()
-        
-        // Verificar si hay alguna restricción del usuario que no sea apta en el producto
-        // Como no tenemos el nombre de la restricción directamente, verificamos si hay restricciones no aptas
-        val isProductSuitable = detectedRestrictions.all { restriction ->
-            restriction.apto
+        try {
+            android.util.Log.d("ProductDetailViewModel", "Verificando compatibilidad con restricciones del usuario: $userRestrictions")
+            val product = _product.value
+            if (product == null) {
+                android.util.Log.e("ProductDetailViewModel", "No hay producto para verificar compatibilidad")
+                return
+            }
+            
+            // Por defecto, asumimos que el producto es apto si no podemos verificarlo
+            var isProductSuitable = true
+            
+            try {
+                val detectedRestrictions = product.getRestrictionsDetected()
+                android.util.Log.d("ProductDetailViewModel", "Restricciones detectadas: ${detectedRestrictions.size}")
+                
+                // Verificar si hay alguna restricción del usuario que no sea apta en el producto
+                if (detectedRestrictions.isNotEmpty()) {
+                    isProductSuitable = detectedRestrictions.all { restriction ->
+                        restriction.apto
+                    }
+                    android.util.Log.d("ProductDetailViewModel", "Producto es apto: $isProductSuitable")
+                } else {
+                    android.util.Log.w("ProductDetailViewModel", "No hay restricciones detectadas, se considera apto por defecto")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("ProductDetailViewModel", "Error al verificar restricciones: ${e.message}", e)
+                // Por seguridad, si hay error consideramos que no es apto
+                isProductSuitable = false
+            }
+            
+            // Actualizar el mapa de análisis con esta información
+            val updatedMap = _analysisDetails.value.toMutableMap()
+            updatedMap["Apto para usuario"] = isProductSuitable
+            _analysisDetails.value = updatedMap
+            
+            android.util.Log.d("ProductDetailViewModel", "Verificación de compatibilidad completada: $isProductSuitable")
+        } catch (e: Exception) {
+            android.util.Log.e("ProductDetailViewModel", "Error general al verificar compatibilidad: ${e.message}", e)
+            // No mostrar error al usuario, solo agregar la información al mapa
+            val updatedMap = _analysisDetails.value.toMutableMap()
+            updatedMap["Apto para usuario"] = false
+            updatedMap["Error en verificación"] = true
+            _analysisDetails.value = updatedMap
         }
-        
-        // Actualizar el mapa de análisis con esta información
-        val updatedMap = _analysisDetails.value.toMutableMap()
-        updatedMap["Apto para usuario"] = isProductSuitable
-        _analysisDetails.value = updatedMap
     }
 }

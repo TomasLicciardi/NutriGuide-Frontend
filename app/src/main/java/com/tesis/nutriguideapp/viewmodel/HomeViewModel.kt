@@ -33,30 +33,33 @@ class HomeViewModel : ViewModel() {
 
                 try {
                     android.util.Log.d("HomeViewModel", "Consultando datos de perfil")
-                    val profile = service.getUserProfile()
-                    _username.value = profile.username
-                    android.util.Log.d("HomeViewModel", "Perfil obtenido: ${profile.username}")
-
-                    // Obtener también las restricciones
-                    android.util.Log.d("HomeViewModel", "Consultando restricciones del usuario")
-                    try {
-                        val restrictions = service.getUserRestrictions()
-                        _userRestrictions.value = restrictions ?: emptyList()
-                        android.util.Log.d("HomeViewModel", "Restricciones obtenidas: ${restrictions?.size ?: 0}")
-                    } catch (e: HttpException) {
-                        android.util.Log.e("HomeViewModel", "Error HTTP al obtener restricciones: ${e.code()}", e)
-                        _userRestrictions.value = emptyList()
-                    } catch (e: IOException) {
-                        android.util.Log.e("HomeViewModel", "Error de red al obtener restricciones", e)
-                        _userRestrictions.value = emptyList()
-                    } catch (e: Exception) {
-                        android.util.Log.e("HomeViewModel", "Error general al obtener restricciones", e)
-                        _userRestrictions.value = emptyList()
-                    }
-                } catch (e: HttpException) {
-                    android.util.Log.e("HomeViewModel", "Error HTTP al obtener perfil: ${e.code()}", e)
-                    if (e.code() == 401) {
-                        // Token expirado o inválido, limpiar y redirigir a login
+                    val profileResponse = service.getUserProfile()
+                    
+                    com.tesis.nutriguideapp.utils.ApiErrorHandler.processResponse(
+                        response = profileResponse,
+                        tag = "HomeViewModel",
+                        onSuccess = { profile ->
+                            _username.value = profile.username
+                            android.util.Log.d("HomeViewModel", "Perfil obtenido: ${profile.username}")
+                            
+                            // Obtener también las restricciones
+                            loadUserRestrictions(service)
+                        },
+                        onError = { errorMessage ->
+                            android.util.Log.e("HomeViewModel", "Error al obtener perfil: $errorMessage")
+                            // Verificar si es un error de autenticación
+                            if (profileResponse.code() == 401) {
+                                android.util.Log.w("HomeViewModel", "Token inválido, se limpiará la sesión")
+                                TokenManager(context).clearToken()
+                            }
+                        }
+                    )
+                } catch (e: Exception) {
+                    val errorMessage = com.tesis.nutriguideapp.utils.ApiErrorHandler.handleApiError(e, "HomeViewModel")
+                    android.util.Log.e("HomeViewModel", "Error al obtener perfil: $errorMessage", e)
+                    
+                    // Si es un error de autenticación de la excepción HTTP
+                    if (e is HttpException && e.code() == 401) {
                         android.util.Log.w("HomeViewModel", "Token inválido, se limpiará la sesión")
                         TokenManager(context).clearToken()
                     }
@@ -71,6 +74,32 @@ class HomeViewModel : ViewModel() {
         }
     }
 
+    private fun loadUserRestrictions(service: UserService) {
+        viewModelScope.launch {
+            try {
+                android.util.Log.d("HomeViewModel", "Consultando restricciones del usuario")
+                val restrictionsResponse = service.getUserRestrictions()
+                
+                com.tesis.nutriguideapp.utils.ApiErrorHandler.processResponse(
+                    response = restrictionsResponse,
+                    tag = "HomeViewModel/Restrictions",
+                    onSuccess = { restrictions ->
+                        _userRestrictions.value = restrictions ?: emptyList()
+                        android.util.Log.d("HomeViewModel", "Restricciones obtenidas: ${restrictions?.size ?: 0}")
+                    },
+                    onError = { errorMessage ->
+                        android.util.Log.e("HomeViewModel", "Error al obtener restricciones: $errorMessage")
+                        _userRestrictions.value = emptyList()
+                    }
+                )
+            } catch (e: Exception) {
+                val errorMessage = com.tesis.nutriguideapp.utils.ApiErrorHandler.handleApiError(e, "HomeViewModel/Restrictions")
+                android.util.Log.e("HomeViewModel", "Error al obtener restricciones: $errorMessage", e)
+                _userRestrictions.value = emptyList()
+            }
+        }
+    }
+    
     fun logout(context: Context, onLogoutSuccess: () -> Unit) {
         try {
             android.util.Log.d("HomeViewModel", "Iniciando proceso de logout")

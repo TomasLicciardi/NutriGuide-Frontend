@@ -73,21 +73,31 @@ class ResetPasswordViewModel : ViewModel() {
         _loading.value = true
         _error.value = null
         _success.value = null
-
         viewModelScope.launch {
             try {
                 val service = RetrofitInstance.retrofit.create(UserService::class.java)
                 val request = PasswordResetRequest(_token.value, _newPassword.value)
                 val response = service.resetPassword(request)
                 
-                if (response.isSuccessful) {
-                    _success.value = "Contraseña restablecida correctamente"
-                    onPasswordReset()
-                } else {
-                    _error.value = "Error al restablecer la contraseña"
-                }
+                com.tesis.nutriguideapp.utils.ApiErrorHandler.processResponse(
+                    response = response,
+                    tag = "ResetPasswordViewModel",
+                    onSuccess = { _ ->
+                        _success.value = "Contraseña restablecida correctamente"
+                        onPasswordReset()
+                    },
+                    onError = { errorMessage ->
+                        // Si es un error 401, el token es inválido
+                        if (response.code() == 401) {
+                            _error.value = "El enlace de restablecimiento no es válido o ha expirado"
+                        } else {
+                            _error.value = errorMessage
+                        }
+                    }
+                )
             } catch (e: Exception) {
-                _error.value = "Error: ${e.message}"
+                val errorMessage = com.tesis.nutriguideapp.utils.ApiErrorHandler.handleApiError(e, "ResetPasswordViewModel")
+                _error.value = errorMessage
             } finally {
                 _loading.value = false
             }

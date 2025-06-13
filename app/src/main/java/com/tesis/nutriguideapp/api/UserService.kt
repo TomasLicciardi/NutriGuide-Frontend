@@ -12,10 +12,10 @@ import retrofit2.http.PUT
 
 interface UserService {
     @GET("/user/profile")
-    suspend fun getUserProfile(): UserProfileResponse
+    suspend fun getUserProfile(): Response<UserProfileResponse>
     
     @GET("/user/restrictions")
-    suspend fun getUserRestrictions(): List<String>
+    suspend fun getUserRestrictions(): Response<List<String>>
     
     @PUT("/user/restrictions")
     suspend fun updateUserRestrictions(@Body request: UserRestrictionsRequest): Response<Map<String, Any>>
