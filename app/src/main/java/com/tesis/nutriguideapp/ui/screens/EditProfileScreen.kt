@@ -166,13 +166,6 @@ fun EditProfileScreen(
                             .fillMaxWidth()
                             .padding(bottom = 8.dp)
                     )
-                    
-                    Text(
-                        text = "Para modificar estos datos, contacta con soporte",
-                        fontSize = 12.sp,
-                        color = Color.Gray,
-                        modifier = Modifier.padding(start = 16.dp)
-                    )
                 }
             }
             

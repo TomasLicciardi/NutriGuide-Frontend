@@ -11,7 +11,6 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -146,9 +145,9 @@ fun HomeScreen(
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(bottom = 32.dp)
             )
+
             var showAnalyzisOptions by remember { mutableStateOf(false) }
 
-            // Botón de Analizar Producto con estilo similar a los otros
             HomeCard(
                 title = "Analizar Producto",
                 description = "Escanea etiquetas de productos para verificar compatibilidad",
@@ -156,13 +155,15 @@ fun HomeScreen(
                 backgroundColor = GreenPrimary,
                 onClick = { showAnalyzisOptions = true }
             )
+
             if (showAnalyzisOptions) {
                 AlertDialog(
                     onDismissRequest = { showAnalyzisOptions = false },
                     title = { Text("Analizar Producto", fontWeight = FontWeight.Bold) },
                     text = { Text("¿Cómo quieres subir la imagen del producto?") },
                     confirmButton = {
-                        Column {                            Button(
+                        Column {
+                            Button(
                                 onClick = {
                                     showAnalyzisOptions = false
                                     navController.navigate("upload")
@@ -195,9 +196,9 @@ fun HomeScreen(
                                 )
                                 Text("Tomar Foto")
                             }
-                            
+
                             Spacer(modifier = Modifier.height(8.dp))
-                            
+
                             OutlinedButton(
                                 onClick = { showAnalyzisOptions = false },
                                 modifier = Modifier.fillMaxWidth()
@@ -216,9 +217,23 @@ fun HomeScreen(
                 icon = Icons.Default.History,
                 backgroundColor = YellowSecondary,
                 onClick = {
-                    val restrictionsList = userRestrictions ?: emptyList()
-                    val restrictionsParam = restrictionsList.joinToString(",")
-                    navController.navigate("history/$restrictionsParam")
+                    try {
+                        val restrictionsList = userRestrictions ?: emptyList()
+                        val restrictionsParam = if (restrictionsList.isEmpty()) {
+                            "none"
+                        } else {
+                            restrictionsList.joinToString(",")
+                        }
+                        android.util.Log.d("HomeScreen", "Navegando a history con parámetro: $restrictionsParam")
+                        navController.navigate("history/$restrictionsParam")
+                    } catch (e: Exception) {
+                        android.util.Log.e("HomeScreen", "Error al navegar al historial: ${e.message}", e)
+                        try {
+                            navController.navigate("history/none")
+                        } catch (fallbackError: Exception) {
+                            android.util.Log.e("HomeScreen", "Error en navegación de fallback: ${fallbackError.message}", fallbackError)
+                        }
+                    }
                 }
             )
 

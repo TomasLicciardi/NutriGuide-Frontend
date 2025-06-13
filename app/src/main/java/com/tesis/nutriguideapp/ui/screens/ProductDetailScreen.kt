@@ -314,39 +314,7 @@ fun ProductDetailScreen(
                                         )
                                     )
                                 }
-                            }
-                        }
-                        
-                        // Acciones adicionales
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = Yellow40.copy(alpha = 0.1f)
-                            )
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    text = "¿Tienes dudas sobre este análisis?",
-                                    style = MaterialTheme.typography.titleSmall
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Button(
-                                    onClick = { /* Acción para contactar soporte */ },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = Green40
-                                    )
-                                ) {
-                                    Text("Contactar soporte")
-                                }
-                            }
-                        }
+                            }                        }
                     } ?: run {
                         // Si no hay producto
                         Box(
@@ -373,10 +341,6 @@ fun ProductDetailScreen(
 private fun formatProductAnalysis(productAnalysis: ProductAnalysis): String {
     return buildString {
         try {
-            appendLine("📝 Texto Detectado:")
-            appendLine(productAnalysis.textoDetectado.ifEmpty { "No disponible" })
-            appendLine()
-            
             appendLine("🧪 Ingredientes:")
             appendLine(productAnalysis.ingredientes.ifEmpty { "No disponible" })
             appendLine()

@@ -112,8 +112,12 @@ class MainActivity : ComponentActivity() {
                             "history/{restrictions}",
                             arguments = listOf(navArgument("restrictions") { type = NavType.StringType })
                         ) { backStackEntry ->
-                            val restrictions = backStackEntry.arguments?.getString("restrictions") ?: ""
-                            val selectedRestrictions = restrictions.split(",").filter { it.isNotBlank() }.toSet()
+                            val restrictions = backStackEntry.arguments?.getString("restrictions") ?: "none"
+                            val selectedRestrictions = if (restrictions == "none" || restrictions.isBlank()) {
+                                emptySet()
+                            } else {
+                                restrictions.split(",").filter { it.isNotBlank() }.toSet()
+                            }
                             HistoryScreen(
                                 navController = navController,
                                 selectedRestrictions = selectedRestrictions
