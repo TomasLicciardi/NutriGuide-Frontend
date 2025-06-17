@@ -120,13 +120,19 @@ class UploadViewModel : ViewModel() {
         android.util.Log.d("UploadViewModel", "Imagen original: ${file.length() / 1024} KB")
         return file
     }
-    
-    // Resetear el formulario
+      // Resetear el formulario
     private fun resetForm() {
         _imageUri.value = null
         _analysisResponse.value = null
         _analyzing.value = false
         _uploading.value = false
+        _error.value = null
+    }
+    
+    // Limpiar análisis para analizar otro producto
+    fun clearAnalysis() {
+        _analysisResponse.value = null
+        _imageUri.value = null
         _error.value = null
     }
 }

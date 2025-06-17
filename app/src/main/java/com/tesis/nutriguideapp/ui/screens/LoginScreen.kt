@@ -145,7 +145,6 @@ fun LoginScreen(
                                         coroutineScope.launch {
                                             try {
                                                 snackbarHostState.showSnackbar("Login exitoso")
-                                                kotlinx.coroutines.delay(300)
                                                 onLoginSuccess()
                                             } catch (e: Exception) {
                                                 android.util.Log.e("LoginScreen", "Error en callback de éxito", e)

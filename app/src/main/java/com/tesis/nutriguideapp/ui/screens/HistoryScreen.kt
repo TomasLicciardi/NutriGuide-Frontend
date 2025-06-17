@@ -25,6 +25,7 @@ import com.tesis.nutriguideapp.model.HistoryItem
 import com.tesis.nutriguideapp.ui.theme.Green40
 import com.tesis.nutriguideapp.ui.theme.Yellow40
 import com.tesis.nutriguideapp.viewmodel.HistoryViewModel
+import com.tesis.nutriguideapp.utils.DateFormatter
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -211,14 +212,14 @@ fun ProductHistoryItem(
                     .padding(end = 8.dp)
             ) {
                 Text(
-                    text = "Producto analizado - ${product.date}",
+                    text = DateFormatter.formatDate(product.date),
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = if (product.isSuitable) "Apto para consumo" else "No apto para consumo",
+                    text = if (product.isSuitable) "✓ Apto" else "✗ No apto",
                     style = MaterialTheme.typography.bodySmall,
                     color = if (product.isSuitable) Green40 else MaterialTheme.colorScheme.error
                 )

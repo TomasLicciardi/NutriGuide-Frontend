@@ -34,6 +34,7 @@ import com.tesis.nutriguideapp.ui.theme.Green40
 import com.tesis.nutriguideapp.ui.theme.Yellow40
 import com.tesis.nutriguideapp.utils.CoilUtils
 import com.tesis.nutriguideapp.viewmodel.ProductDetailViewModel
+import com.tesis.nutriguideapp.utils.DateFormatter
 import com.tesis.nutriguideapp.viewmodel.RestriccionesViewModel
 
 
@@ -191,12 +192,12 @@ fun ProductDetailScreen(
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Bold
                                 )
-                                Spacer(modifier = Modifier.height(16.dp))
-                                  // Fecha de análisis si está disponible
+                                Spacer(modifier = Modifier.height(16.dp))                                  // Fecha de análisis si está disponible
                                 p.date?.let { date ->
                                     Text(
-                                        text = "Fecha de análisis: $date",
-                                        style = MaterialTheme.typography.bodyMedium
+                                        text = "Fecha de análisis: ${DateFormatter.formatDate(date)}",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                                     )
                                     Spacer(modifier = Modifier.height(8.dp))
                                 }

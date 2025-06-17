@@ -9,8 +9,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Camera
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.TipsAndUpdates
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,7 +34,6 @@ import com.tesis.nutriguideapp.ui.theme.WhiteBackground
 import com.tesis.nutriguideapp.ui.theme.YellowSecondary
 import com.tesis.nutriguideapp.utils.TokenManager
 import com.tesis.nutriguideapp.viewmodel.HomeViewModel
-import kotlinx.coroutines.delay
 
 @Composable
 fun HomeCard(
@@ -107,9 +110,10 @@ fun HomeScreen(
     val loading by viewModel.loading
     val userRestrictions by viewModel.userRestrictions
 
+    // Estado para el menú desplegable
+    var showProfileMenu by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         if (token == null) {
-            delay(100)
             navController.navigate("login") {
                 popUpTo("home") { inclusive = true }
             }
@@ -129,14 +133,85 @@ fun HomeScreen(
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "NUTRIGUIDE",
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                color = GreenPrimary,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
+            // Header con título y menú de perfil
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "NUTRIGUIDE",
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = GreenPrimary,
+                    textAlign = TextAlign.Start
+                )
+                
+                // Menú desplegable para perfil y configuraciones
+                Box {
+                    IconButton(
+                        onClick = { showProfileMenu = true }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "Menú",
+                            tint = GreenPrimary
+                        )
+                    }
+                    
+                    DropdownMenu(
+                        expanded = showProfileMenu,
+                        onDismissRequest = { showProfileMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { 
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Person,
+                                        contentDescription = "Mi Perfil",
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Mi Perfil")
+                                }
+                            },
+                            onClick = {
+                                showProfileMenu = false
+                                navController.navigate("profile")
+                            }
+                        )
+                        
+                        DropdownMenuItem(
+                            text = { 
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Logout,
+                                        contentDescription = "Cerrar Sesión",
+                                        modifier = Modifier.size(20.dp),
+                                        tint = Color.Red
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Cerrar Sesión", color = Color.Red)
+                                }
+                            },
+                            onClick = {
+                                showProfileMenu = false
+                                viewModel.logout(context) {
+                                    navController.navigate("login") {
+                                        popUpTo("home") { inclusive = true }
+                                    }
+                                }
+                            }
+                        )
+                    }
+                }
+            }
 
             Text(
                 text = if (username.isNotEmpty()) "¡Hola, $username!" else "¡Bienvenido!",
@@ -233,45 +308,11 @@ fun HomeScreen(
                         } catch (fallbackError: Exception) {
                             android.util.Log.e("HomeScreen", "Error en navegación de fallback: ${fallbackError.message}", fallbackError)
                         }
-                    }
-                }
+                    }                }
             )
 
-            HomeCard(
-                title = "Mi Perfil",
-                description = "Ver y editar información personal",
-                icon = Icons.Default.Person,
-                backgroundColor = Color(0xFF9C27B0),
-                onClick = {
-                    navController.navigate("profile")
-                }
-            )
-
+            Spacer(modifier = Modifier.height(24.dp))            
             Spacer(modifier = Modifier.weight(1f))
-
-            Button(
-                onClick = {
-                    viewModel.logout(context) {
-                        navController.navigate("login") {
-                            popUpTo("home") { inclusive = true }
-                        }
-                    }
-                },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.Red.copy(alpha = 0.8f)
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Logout,
-                    contentDescription = "Cerrar Sesión",
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("CERRAR SESIÓN")
-            }
         }
 
         if (loading) {

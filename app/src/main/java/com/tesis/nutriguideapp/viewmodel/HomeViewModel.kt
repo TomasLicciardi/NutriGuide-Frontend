@@ -9,7 +9,6 @@ import com.tesis.nutriguideapp.api.UserService
 import com.tesis.nutriguideapp.api.RetrofitInstance
 import com.tesis.nutriguideapp.utils.TokenManager
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.delay
 import retrofit2.HttpException
 import java.io.IOException
 
@@ -108,7 +107,6 @@ class HomeViewModel : ViewModel() {
 
             viewModelScope.launch {
                 try {
-                    delay(300)
                     android.util.Log.d("HomeViewModel", "Llamando al callback de éxito del logout")
                     onLogoutSuccess()
                 } catch (e: Exception) {
