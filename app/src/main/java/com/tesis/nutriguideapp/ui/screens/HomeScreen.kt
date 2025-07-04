@@ -1,12 +1,17 @@
 package com.tesis.nutriguideapp.ui.screens
 
 import android.content.Context
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Camera
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Lightbulb
@@ -20,14 +25,18 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.tesis.nutriguideapp.R
 import com.tesis.nutriguideapp.ui.theme.BlueAccent
 import com.tesis.nutriguideapp.ui.theme.GreenPrimary
 import com.tesis.nutriguideapp.ui.theme.WhiteBackground
@@ -46,53 +55,91 @@ fun HomeCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = 16.dp)
-            .clip(RoundedCornerShape(16.dp))
+            .padding(vertical = 8.dp, horizontal = 8.dp)
+            .clip(RoundedCornerShape(20.dp))
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
-            containerColor = backgroundColor.copy(alpha = 0.1f)
+            containerColor = Color.White
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
+        border = BorderStroke(
+            width = 1.5.dp,
+            color = backgroundColor.copy(alpha = 0.3f)
+        )
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(24.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(28.dp))
-                    .background(backgroundColor),
+                    .size(68.dp)
+                    .clip(RoundedCornerShape(34.dp))
+                    .background(
+                        brush = Brush.linearGradient(
+                            colors = listOf(
+                                backgroundColor,
+                                backgroundColor.copy(alpha = 0.8f)
+                            )
+                        )
+                    )
+                    .padding(2.dp), // Pequeño padding interno para el efecto
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = title,
-                    tint = Color.White,
-                    modifier = Modifier.size(28.dp)
-                )
+                Box(
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(RoundedCornerShape(32.dp))
+                        .background(
+                            brush = Brush.radialGradient(
+                                colors = listOf(
+                                    backgroundColor.copy(alpha = 0.9f),
+                                    backgroundColor
+                                )
+                            )
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = title,
+                        tint = Color.White,
+                        modifier = Modifier.size(34.dp)
+                    )
+                }
             }
 
             Column(
                 modifier = Modifier
-                    .padding(start = 16.dp)
+                    .padding(start = 20.dp)
                     .weight(1f)
             ) {
                 Text(
                     text = title,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
-                    color = backgroundColor
+                    fontSize = 20.sp,
+                    color = backgroundColor,
+                    letterSpacing = 0.5.sp
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = description,
-                    fontSize = 14.sp,
-                    color = Color.DarkGray
+                    fontSize = 15.sp,
+                    color = Color.Gray,
+                    lineHeight = 20.sp,
+                    fontWeight = FontWeight.Medium
                 )
             }
+
+            // Indicador visual de que es clickeable
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = "Ir",
+                tint = backgroundColor.copy(alpha = 0.6f),
+                modifier = Modifier.size(24.dp)
+            )
         }
     }
 }
@@ -125,30 +172,30 @@ fun HomeScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(WhiteBackground)
     ) {
+        // Fondo con patrón decorativo
+        Image(
+            painter = painterResource(id = R.drawable.home_background_pattern),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
+        )
+        
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Header con título y menú de perfil
+            // Header con menú de perfil
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                    .padding(bottom = 24.dp),
+                horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "NUTRIGUIDE",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = GreenPrimary,
-                    textAlign = TextAlign.Start
-                )
-                
                 // Menú desplegable para perfil y configuraciones
                 Box {
                     IconButton(
@@ -157,7 +204,8 @@ fun HomeScreen(
                         Icon(
                             imageVector = Icons.Default.MoreVert,
                             contentDescription = "Menú",
-                            tint = GreenPrimary
+                            tint = GreenPrimary,
+                            modifier = Modifier.size(28.dp)
                         )
                     }
                     
@@ -213,16 +261,66 @@ fun HomeScreen(
                 }
             }
 
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Logo de NutriGuide
+            Image(
+                painter = painterResource(id = R.drawable.nutriguide_logo),
+                contentDescription = "NutriGuide Logo",
+                modifier = Modifier
+                    .size(120.dp)
+                    .padding(bottom = 16.dp)
+            )
+
+            // Título principal
+            Text(
+                text = "NUTRIGUIDE",
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold,
+                color = GreenPrimary,
+                textAlign = TextAlign.Center,
+                letterSpacing = 2.sp
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Saludo personalizado
             Text(
                 text = if (username.isNotEmpty()) "¡Hola, $username!" else "¡Bienvenido!",
-                fontSize = 20.sp,
+                fontSize = 18.sp,
                 color = Color.DarkGray,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(bottom = 32.dp)
+                fontWeight = FontWeight.Medium
             )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Frase motivacional
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = GreenPrimary.copy(alpha = 0.1f)
+                ),
+                shape = RoundedCornerShape(20.dp)
+            ) {
+                Text(
+                    text = "¿Listo para escanear alimentos y descubrir si son perfectos para ti?",
+                    fontSize = 16.sp,
+                    color = GreenPrimary,
+                    textAlign = TextAlign.Center,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.padding(20.dp),
+                    lineHeight = 22.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(40.dp))
 
             var showAnalyzisOptions by remember { mutableStateOf(false) }
 
+            // Cards principales con mejor espaciado
             HomeCard(
                 title = "Analizar Producto",
                 description = "Escanea etiquetas de productos para verificar compatibilidad",
@@ -234,8 +332,19 @@ fun HomeScreen(
             if (showAnalyzisOptions) {
                 AlertDialog(
                     onDismissRequest = { showAnalyzisOptions = false },
-                    title = { Text("Analizar Producto", fontWeight = FontWeight.Bold) },
-                    text = { Text("¿Cómo quieres subir la imagen del producto?") },
+                    title = { 
+                        Text(
+                            "Analizar Producto", 
+                            fontWeight = FontWeight.Bold,
+                            color = GreenPrimary
+                        ) 
+                    },
+                    text = { 
+                        Text(
+                            "¿Cómo quieres subir la imagen del producto?",
+                            color = Color.DarkGray
+                        ) 
+                    },
                     confirmButton = {
                         Column {
                             Button(
@@ -244,7 +353,8 @@ fun HomeScreen(
                                     navController.navigate("upload")
                                 },
                                 modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)
+                                colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary),
+                                shape = RoundedCornerShape(12.dp)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Image,
@@ -262,7 +372,8 @@ fun HomeScreen(
                                     navController.navigate("camera")
                                 },
                                 modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.buttonColors(containerColor = BlueAccent)
+                                colors = ButtonDefaults.buttonColors(containerColor = BlueAccent),
+                                shape = RoundedCornerShape(12.dp)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Camera,
@@ -276,13 +387,15 @@ fun HomeScreen(
 
                             OutlinedButton(
                                 onClick = { showAnalyzisOptions = false },
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp)
                             ) {
                                 Text("Cancelar")
                             }
                         }
                     },
-                    dismissButton = { }
+                    dismissButton = { },
+                    shape = RoundedCornerShape(16.dp)
                 )
             }
 
@@ -308,11 +421,11 @@ fun HomeScreen(
                         } catch (fallbackError: Exception) {
                             android.util.Log.e("HomeScreen", "Error en navegación de fallback: ${fallbackError.message}", fallbackError)
                         }
-                    }                }
+                    }                
+                }
             )
 
-            Spacer(modifier = Modifier.height(24.dp))            
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(40.dp))
         }
 
         if (loading) {

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+
+    <!-- Fondo circular verde -->
+    <path
+        android:fillColor="#4CAF50"
+        android:pathData="M60,10 A50,50 0 1,1 60,110 A50,50 0 1,1 60,10 Z" />
+
+    <!-- Círculo interno más claro -->
+    <path
+        android:fillColor="#66BB6A"
+        android:pathData="M60,20 A40,40 0 1,1 60,100 A40,40 0 1,1 60,20 Z" />
+
+    <!-- Hoja principal simplificada -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M45,35 Q60,25 75,35 Q80,50 75,65 Q60,75 45,65 Q40,50 45,35 Z" />
+
+    <!-- Vena de la hoja -->
+    <path
+        android:fillColor="#4CAF50"
+        android:strokeWidth="2"
+        android:strokeColor="#4CAF50"
+        android:pathData="M60,35 L60,65" />
+
+    <!-- Lupa simplificada -->
+    <path
+        android:fillColor="#FFB74D"
+        android:pathData="M70,37 A8,8 0 1,1 70,53 A8,8 0 1,1 70,37 Z" />
+
+    <!-- Marco de la lupa -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FF8F00"
+        android:strokeWidth="2"
+        android:pathData="M70,37 A8,8 0 1,1 70,53 A8,8 0 1,1 70,37 Z" />
+
+    <!-- Mango de la lupa -->
+    <path
+        android:strokeColor="#FF8F00"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M76,51 L82,57" />
+
+    <!-- Checkmark -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M52,48 L56,52 L64,44" />
+
+</vector>
