@@ -28,7 +28,7 @@ class RegisterViewModel : ViewModel() {
     private val _selectedRestrictions = mutableStateOf<List<String>>(emptyList())
     val selectedRestrictions: State<List<String>> = _selectedRestrictions
     private val _availableRestrictions = mutableStateOf(listOf(
-        "Sin gluten", "Sin lactosa", "Vegano", "Vegetariano", 
+        "Sin gluten", "Sin lactosa", "Vegano", 
         "Sin frutos secos"
     ))
     val availableRestrictions: State<List<String>> = _availableRestrictions
