@@ -94,7 +94,10 @@ class UploadViewModel : ViewModel() {
                     }
                 } else {
                     // 🆕 MANEJO ESPECÍFICO POR CÓDIGO DE ERROR
-                    handleErrorResponse(response.code(), response.errorBody()?.string())
+                    android.util.Log.d("UploadViewModel", "Respuesta de error - Código: ${response.code()}")
+                    val errorBodyString = response.errorBody()?.string()
+                    android.util.Log.d("UploadViewModel", "Error body raw: $errorBodyString")
+                    handleErrorResponse(response.code(), errorBodyString)
                 }
             } catch (e: java.net.SocketTimeoutException) {
                 val errorMsg = "Tiempo de espera agotado"
@@ -130,10 +133,14 @@ class UploadViewModel : ViewModel() {
         try {
             val gson = Gson()
             val errorResponse = gson.fromJson(errorBody, BackendErrorResponse::class.java)
+            android.util.Log.d("UploadViewModel", "Error response parseado: $errorResponse")
+            
             val errorDetail = errorResponse.getErrorData() // 🆕 Usar función helper
+            android.util.Log.d("UploadViewModel", "Error detail: $errorDetail")
             
             when (statusCode) {
                 400 -> {
+                    android.util.Log.d("UploadViewModel", "Error 400 detectado - Imagen inválida")
                     _analysisState.value = AnalysisResult.ImageError(
                         errorType = errorDetail.error,
                         message = errorDetail.message,
@@ -143,6 +150,8 @@ class UploadViewModel : ViewModel() {
                 }
                 422 -> {
                     android.util.Log.d("UploadViewModel", "Error 422 detectado - Confianza insuficiente")
+                    android.util.Log.d("UploadViewModel", "Mensaje: ${errorDetail.message}")
+                    android.util.Log.d("UploadViewModel", "Instrucciones: ${errorDetail.instructions}")
                     _analysisState.value = AnalysisResult.LowConfidenceError(
                         message = errorDetail.message,
                         instructions = errorDetail.instructions
@@ -193,13 +202,27 @@ class UploadViewModel : ViewModel() {
             }
         }
         
+        android.util.Log.d("UploadViewModel", "Activando modal de error")
         _showErrorModal.value = true
-        android.util.Log.d("UploadViewModel", "Modal de error activado - Estado: ${_analysisState.value}")
+        android.util.Log.d("UploadViewModel", "Estado final - analysisState: ${_analysisState.value}, showErrorModal: ${_showErrorModal.value}")
     }
 
     // 🆕 FUNCIONES PARA CONTROLAR MODALES
     fun dismissErrorModal() {
         _showErrorModal.value = false
+    }
+    
+    // 🆕 FUNCIÓN DEBUG PARA SIMULAR ERROR 422
+    fun simulateLowConfidenceError() {
+        android.util.Log.d("UploadViewModel", "Simulando error de confianza baja")
+        _analyzing.value = false
+        _analysisState.value = AnalysisResult.LowConfidenceError(
+            message = "Confianza 0.0% (❌) - Umbral normal: 85.0%",
+            instructions = "Toma una foto más clara de la etiqueta completa con mejor iluminación y enfoque."
+        )
+        _error.value = "Confianza insuficiente"
+        _showErrorModal.value = true
+        android.util.Log.d("UploadViewModel", "Error simulado - Estado: ${_analysisState.value}, Modal: ${_showErrorModal.value}")
     }
 
     fun retryAnalysis(context: Context) {

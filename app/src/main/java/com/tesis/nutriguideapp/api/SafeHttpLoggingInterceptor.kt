@@ -125,18 +125,25 @@ class SafeHttpLoggingInterceptor : Interceptor {
                         logger.log("ERROR (cuerpo no leído): Código ${response.code}")
                         
                         try {
+                            // 🆕 Crear un error más específico según el código de estado
+                            val errorJson = when (response.code) {
+                                422 -> """{"error":"low_confidence","message":"Análisis con baja confianza","instructions":"Toma una foto más clara de la etiqueta completa"}"""
+                                400 -> """{"error":"invalid_image","message":"Imagen no válida","instructions":"Toma una foto de la etiqueta nutricional del producto"}"""
+                                else -> """{"error":"server_error","message":"Error del servidor","instructions":"Intenta nuevamente en unos momentos"}"""
+                            }
+                            
                             val emptyBody = ResponseBody.create(
                                 "application/json".toMediaTypeOrNull(),
-                                "{\"detail\":\"Error ${response.code}\"}"
+                                errorJson
                             )
                             
                             response = response.newBuilder()
                                 .body(emptyBody)
                                 .build()
                                 
-                            Log.d(TAG, "Creado cuerpo vacío para error ${response.code}")
+                            Log.d(TAG, "Creado cuerpo específico para error ${response.code}: $errorJson")
                         } catch (e: Exception) {
-                            Log.e(TAG, "Error al crear cuerpo vacío: ${e.message}", e)
+                            Log.e(TAG, "Error al crear cuerpo específico: ${e.message}", e)
                         }
                     }
                 } catch (e: Exception) {

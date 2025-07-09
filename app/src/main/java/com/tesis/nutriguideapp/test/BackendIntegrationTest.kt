@@ -29,6 +29,22 @@ fun testBackendErrorParsing() {
     
     println("Error de calidad: ${poorQualityError.detail?.message}")
     
+    // 🆕 Simular respuesta de error 422 directo (sin wrapper detail)
+    val lowConfidenceErrorDirect = BackendErrorResponse(
+        error = "low_confidence",
+        message = "Confianza 0.0% (❌) - Umbral normal: 85.0%",
+        instructions = "Toma una foto más clara de la etiqueta completa con mejor iluminación y enfoque."
+    )
+    
+    println("Error de confianza directo: ${lowConfidenceErrorDirect.getErrorData().message}")
+    println("Instrucciones: ${lowConfidenceErrorDirect.getErrorData().instructions}")
+    
+    // Verificar que la función helper funciona correctamente
+    val errorData = lowConfidenceErrorDirect.getErrorData()
+    println("Tipo de error: ${errorData.error}")
+    println("Mensaje: ${errorData.message}")
+    println("Instrucciones: ${errorData.instructions}")
+    
     // Simular análisis exitoso (usando la estructura correcta de ProductAnalysis)
     val successResponse = AnalysisResponse(
         productId = 123,

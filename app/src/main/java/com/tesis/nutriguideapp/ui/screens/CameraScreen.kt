@@ -14,8 +14,10 @@ import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Camera
@@ -29,17 +31,22 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
+import com.tesis.nutriguideapp.model.AnalysisResult
 import com.tesis.nutriguideapp.ui.theme.Green40
 import com.tesis.nutriguideapp.viewmodel.CameraViewModel
+import kotlinx.coroutines.delay
 import java.io.File
 import java.util.concurrent.Executor
-import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,10 +65,12 @@ fun CameraScreen(
     val analyzeSuccess by viewModel.analyzeSuccess.collectAsState()
     val productId by viewModel.productId.collectAsState()
 
-    // Estado para permisos de cámara
+    val analysisState by viewModel.analysisState.collectAsState()
+    val showErrorModal by viewModel.showErrorModal.collectAsState()
+
+    var showTipsModal by remember { mutableStateOf(false) }
     var hasCameraPermission by remember { mutableStateOf(false) }
 
-    // Solicitar permisos de cámara
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -75,7 +84,6 @@ fun CameraScreen(
         }
     }
 
-    // Verificar permisos al iniciar
     LaunchedEffect(Unit) {
         try {
             hasCameraPermission = ContextCompat.checkSelfPermission(
@@ -95,14 +103,12 @@ fun CameraScreen(
         }
     }
 
-    // Mostrar errores
     LaunchedEffect(error) {
         error?.let {
             Toast.makeText(context, it, Toast.LENGTH_LONG).show()
         }
     }
 
-    // Navegar al detalle del producto si el análisis fue exitoso
     LaunchedEffect(analyzeSuccess, productId) {
         if (analyzeSuccess && productId != null) {
             delay(300)
@@ -196,14 +202,12 @@ fun CameraScreen(
 
                     hasCameraPermission -> {
                         Box(modifier = Modifier.fillMaxSize()) {
-                            // Vista previa de la cámara
                             CameraPreview(
                                 context = context,
                                 lifecycleOwner = lifecycleOwner,
                                 imageCapture = imageCapture
                             )
 
-                            // Botón de captura
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -264,6 +268,131 @@ fun CameraScreen(
             }
         }
     )
+
+    val currentAnalysisState = analysisState
+    android.util.Log.d(
+        "CameraScreen",
+        "Evaluando estado para mostrar modales: $currentAnalysisState, Modal visible: $showErrorModal"
+    )
+
+    when (currentAnalysisState) {
+        is AnalysisResult.ImageError -> {
+            val (title, color) = when (currentAnalysisState.errorType) {
+                "invalid_image" -> "❌ Imagen no válida" to Color(0xFFFF5722)
+                "poor_quality" -> "⚠️ Imagen borrosa" to Color(0xFFFF9800)
+                "no_ingredients" -> "🔍 Ingredientes no detectados" to Color(0xFF9C27B0)
+                else -> "Error" to Color.Red
+            }
+
+            SimpleErrorModal(
+                isVisible = showErrorModal,
+                title = title,
+                message = currentAnalysisState.message,
+                instructions = currentAnalysisState.instructions,
+                primaryButtonText = "📷 Tomar otra foto",
+                onPrimaryClick = {
+                    viewModel.dismissErrorModal()
+                    viewModel.clearAnalysisAndRetakePhoto()
+                },
+                secondaryButtonText = "💡 Ver Tips",
+                onSecondaryClick = {
+                    viewModel.dismissErrorModal()
+                    showTipsModal = true
+                },
+                onDismiss = {
+                    viewModel.dismissErrorModal()
+                    viewModel.clearAnalysisAndRetakePhoto()
+                },
+                primaryColor = color
+            )
+        }
+
+        is AnalysisResult.LowConfidenceError -> {
+            SimpleErrorModal(
+                isVisible = showErrorModal,
+                title = "⚠️ Análisis con baja confianza",
+                message = currentAnalysisState.message,
+                instructions = currentAnalysisState.instructions,
+                primaryButtonText = "📷 Tomar otra foto",
+                onPrimaryClick = {
+                    viewModel.dismissErrorModal()
+                    viewModel.clearAnalysisAndRetakePhoto()
+                },
+                secondaryButtonText = "💡 Ver Tips",
+                onSecondaryClick = {
+                    viewModel.dismissErrorModal()
+                    showTipsModal = true
+                },
+                onDismiss = {
+                    viewModel.dismissErrorModal()
+                    viewModel.clearAnalysisAndRetakePhoto()
+                },
+                primaryColor = Color(0xFFFF9800)
+            )
+        }
+
+        is AnalysisResult.ServerError -> {
+            SimpleErrorModal(
+                isVisible = showErrorModal,
+                title = "❌ Error del servidor",
+                message = currentAnalysisState.message,
+                instructions = currentAnalysisState.instructions,
+                primaryButtonText = "🔄 Reintentar",
+                onPrimaryClick = {
+                    viewModel.dismissErrorModal()
+                    viewModel.analyzeImage(context)
+                },
+                secondaryButtonText = "Cancelar",
+                onSecondaryClick = { viewModel.dismissErrorModal() },
+                onDismiss = { viewModel.dismissErrorModal() },
+                primaryColor = Color(0xFFF44336)
+            )
+        }
+
+        is AnalysisResult.NetworkError -> {
+            SimpleErrorModal(
+                isVisible = showErrorModal,
+                title = "📶 Error de conexión",
+                message = currentAnalysisState.message,
+                instructions = currentAnalysisState.instructions,
+                primaryButtonText = "🔄 Reintentar",
+                onPrimaryClick = {
+                    viewModel.dismissErrorModal()
+                    viewModel.analyzeImage(context)
+                },
+                secondaryButtonText = "Cancelar",
+                onSecondaryClick = { viewModel.dismissErrorModal() },
+                onDismiss = { viewModel.dismissErrorModal() },
+                primaryColor = Color(0xFF607D8B)
+            )
+        }
+
+        is AnalysisResult.RateLimitError -> {
+            SimpleErrorModal(
+                isVisible = showErrorModal,
+                title = "⏳ Límite de solicitudes",
+                message = currentAnalysisState.message,
+                instructions = currentAnalysisState.instructions,
+                primaryButtonText = "🔄 Reintentar",
+                onPrimaryClick = {
+                    viewModel.dismissErrorModal()
+                    viewModel.analyzeImage(context)
+                },
+                secondaryButtonText = "Cancelar",
+                onSecondaryClick = { viewModel.dismissErrorModal() },
+                onDismiss = { viewModel.dismissErrorModal() },
+                primaryColor = Color(0xFF2196F3)
+            )
+        }
+
+        else -> Unit
+    }
+
+    if (showTipsModal) {
+        SimpleTipsModal(
+            onDismiss = { showTipsModal = false }
+        )
+    }
 }
 
 @Composable
