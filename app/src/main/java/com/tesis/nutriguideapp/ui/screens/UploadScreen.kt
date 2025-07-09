@@ -28,6 +28,9 @@ import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.tesis.nutriguideapp.ui.theme.GreenPrimary
 import com.tesis.nutriguideapp.viewmodel.UploadViewModel
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.text.style.TextAlign
+import com.tesis.nutriguideapp.model.AnalysisResult
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,6 +46,19 @@ fun UploadScreen(
     val analyzing by viewModel.analyzing
     val analysisResponse by viewModel.analysisResponse
     val error by viewModel.error
+    
+    // 🆕 NUEVOS ESTADOS PARA MANEJO DE ERRORES
+    val analysisState by viewModel.analysisState
+    val showErrorModal by viewModel.showErrorModal
+    
+    // Debug: Log cambios de estado
+    LaunchedEffect(analysisState, showErrorModal) {
+        android.util.Log.d("UploadScreen", "Estado análisis: $analysisState")
+        android.util.Log.d("UploadScreen", "Mostrar modal: $showErrorModal")
+    }
+    
+    // Estado para mostrar tips de fotografía
+    var showTipsModal by remember { mutableStateOf(false) }
     
     // Launcher para selector de archivos
     val launcher = rememberLauncherForActivityResult(
@@ -79,6 +95,16 @@ fun UploadScreen(
                 navigationIcon = {
                     IconButton(onClick = { navController?.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                    }
+                },
+                actions = {
+                    // 🆕 BOTÓN DE AYUDA PARA TIPS
+                    IconButton(onClick = { showTipsModal = true }) {
+                        Icon(
+                            imageVector = Icons.Default.HelpOutline,
+                            contentDescription = "Tips para mejores fotos",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
                     }
                 }
             )
@@ -431,10 +457,428 @@ fun UploadScreen(
             )
         }
         
+        // 🆕 MODALES DE ERRORES ESPECÍFICOS - INTEGRADOS DIRECTAMENTE
+        // Capturar el estado actual para evitar smart cast issues
+        val currentAnalysisState = analysisState
+        android.util.Log.d("UploadScreen", "Evaluando estado para mostrar modales: $currentAnalysisState, Modal visible: $showErrorModal")
+        when (currentAnalysisState) {
+            is AnalysisResult.ImageError -> {
+                when (currentAnalysisState.errorType) {
+                    "invalid_image" -> {
+                        SimpleErrorModal(
+                            isVisible = showErrorModal,
+                            title = "❌ Imagen no válida",
+                            message = currentAnalysisState.message,
+                            instructions = currentAnalysisState.instructions,
+                            primaryButtonText = "📷 Tomar otra foto",
+                            onPrimaryClick = { 
+                                viewModel.dismissErrorModal()
+                                viewModel.clearAnalysisAndRetakePhoto()
+                            },
+                            secondaryButtonText = "💡 Ver Tips",
+                            onSecondaryClick = { 
+                                viewModel.dismissErrorModal()
+                                showTipsModal = true
+                            },
+                            onDismiss = { 
+                                viewModel.dismissErrorModal()
+                                viewModel.clearAnalysisAndRetakePhoto()
+                            },
+                            primaryColor = Color(0xFFFF5722)
+                        )
+                    }
+                    "poor_quality" -> {
+                        SimpleErrorModal(
+                            isVisible = showErrorModal,
+                            title = "⚠️ Imagen borrosa",
+                            message = currentAnalysisState.message,
+                            instructions = currentAnalysisState.instructions,
+                            primaryButtonText = "📷 Tomar otra foto",
+                            onPrimaryClick = { 
+                                viewModel.dismissErrorModal()
+                                viewModel.clearAnalysisAndRetakePhoto()
+                            },
+                            secondaryButtonText = "💡 Ver Tips",
+                            onSecondaryClick = { 
+                                viewModel.dismissErrorModal()
+                                showTipsModal = true
+                            },
+                            onDismiss = { 
+                                viewModel.dismissErrorModal()
+                                viewModel.clearAnalysisAndRetakePhoto()
+                            },
+                            primaryColor = Color(0xFFFF9800)
+                        )
+                    }
+                    "no_ingredients" -> {
+                        SimpleErrorModal(
+                            isVisible = showErrorModal,
+                            title = "🔍 Ingredientes no detectados",
+                            message = currentAnalysisState.message,
+                            instructions = currentAnalysisState.instructions,
+                            primaryButtonText = "📷 Tomar otra foto",
+                            onPrimaryClick = { 
+                                viewModel.dismissErrorModal()
+                                viewModel.clearAnalysisAndRetakePhoto()
+                            },
+                            secondaryButtonText = "💡 Ver Tips",
+                            onSecondaryClick = { 
+                                viewModel.dismissErrorModal()
+                                showTipsModal = true
+                            },
+                            onDismiss = { 
+                                viewModel.dismissErrorModal()
+                                viewModel.clearAnalysisAndRetakePhoto()
+                            },
+                            primaryColor = Color(0xFF9C27B0)
+                        )
+                    }
+                }
+            }
+            is AnalysisResult.LowConfidenceError -> {
+                SimpleErrorModal(
+                    isVisible = showErrorModal,
+                    title = "⚠️ Análisis con baja confianza",
+                    message = currentAnalysisState.message,
+                    instructions = currentAnalysisState.instructions,
+                    primaryButtonText = "📷 Tomar otra foto",
+                    onPrimaryClick = { 
+                        viewModel.dismissErrorModal()
+                        viewModel.clearAnalysisAndRetakePhoto()
+                    },
+                    secondaryButtonText = "💡 Ver Tips",
+                    onSecondaryClick = { 
+                        viewModel.dismissErrorModal()
+                        showTipsModal = true
+                    },
+                    onDismiss = { 
+                        viewModel.dismissErrorModal()
+                        viewModel.clearAnalysisAndRetakePhoto()
+                    },
+                    primaryColor = Color(0xFFFF9800)
+                )
+            }
+            is AnalysisResult.ServerError -> {
+                SimpleErrorModal(
+                    isVisible = showErrorModal,
+                    title = "❌ Error del servidor",
+                    message = currentAnalysisState.message,
+                    instructions = currentAnalysisState.instructions,
+                    primaryButtonText = "🔄 Reintentar",
+                    onPrimaryClick = { 
+                        viewModel.dismissErrorModal()
+                        viewModel.analyzeImage(context)
+                    },
+                    secondaryButtonText = "Cancelar",
+                    onSecondaryClick = { 
+                        viewModel.dismissErrorModal()
+                    },
+                    onDismiss = { 
+                        viewModel.dismissErrorModal()
+                    },
+                    primaryColor = Color(0xFFF44336)
+                )
+            }
+            is AnalysisResult.NetworkError -> {
+                SimpleErrorModal(
+                    isVisible = showErrorModal,
+                    title = "📶 Error de conexión",
+                    message = currentAnalysisState.message,
+                    instructions = currentAnalysisState.instructions,
+                    primaryButtonText = "🔄 Reintentar",
+                    onPrimaryClick = { 
+                        viewModel.dismissErrorModal()
+                        viewModel.analyzeImage(context)
+                    },
+                    secondaryButtonText = "Cancelar",
+                    onSecondaryClick = { 
+                        viewModel.dismissErrorModal()
+                    },
+                    onDismiss = { 
+                        viewModel.dismissErrorModal()
+                    },
+                    primaryColor = Color(0xFF607D8B)
+                )
+            }
+            is AnalysisResult.RateLimitError -> {
+                SimpleErrorModal(
+                    isVisible = showErrorModal,
+                    title = "⏳ Límite de solicitudes",
+                    message = currentAnalysisState.message,
+                    instructions = currentAnalysisState.instructions,
+                    primaryButtonText = "🔄 Reintentar",
+                    onPrimaryClick = { 
+                        viewModel.dismissErrorModal()
+                        viewModel.analyzeImage(context)
+                    },
+                    secondaryButtonText = "Cancelar",
+                    onSecondaryClick = { 
+                        viewModel.dismissErrorModal()
+                    },
+                    onDismiss = { 
+                        viewModel.dismissErrorModal()
+                    },
+                    primaryColor = Color(0xFF2196F3)
+                )
+            }
+            else -> {
+                // No mostrar modal para estados Success o Loading
+            }
+        }
+        
+        // 🆕 MODAL DE TIPS PARA FOTOGRAFÍA SIMPLE
+        if (showTipsModal) {
+            SimpleTipsModal(
+                onDismiss = { showTipsModal = false }
+            )
+        }
+        
         // Snackbar para errores
         if (error != null) {
             LaunchedEffect(error) {
                 snackbarHostState.showSnackbar(error ?: "")
+            }
+        }
+    }
+}
+
+// 🆕 MODALES SIMPLES INTEGRADOS DIRECTAMENTE
+@Composable
+fun SimpleErrorModal(
+    isVisible: Boolean,
+    title: String,
+    message: String,
+    instructions: String,
+    primaryButtonText: String,
+    onPrimaryClick: () -> Unit,
+    secondaryButtonText: String,
+    onSecondaryClick: () -> Unit,
+    onDismiss: () -> Unit,
+    primaryColor: Color
+) {
+    if (isVisible) {
+        Dialog(onDismissRequest = onDismiss) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // Título
+                    Text(
+                        text = title,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = primaryColor,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+                    
+                    // Mensaje
+                    Text(
+                        text = message,
+                        fontSize = 16.sp,
+                        color = Color.Gray,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+                    
+                    // Instrucciones
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 20.dp),
+                        colors = CardDefaults.cardColors(containerColor = primaryColor.copy(alpha = 0.1f))
+                    ) {
+                        Text(
+                            text = instructions,
+                            fontSize = 14.sp,
+                            color = primaryColor,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            modifier = Modifier.padding(12.dp)
+                        )
+                    }
+                    
+                    // Botones
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = onPrimaryClick,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = primaryColor)
+                        ) {
+                            Text(primaryButtonText, color = Color.White)
+                        }
+                        
+                        OutlinedButton(
+                            onClick = onSecondaryClick,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(secondaryButtonText, color = primaryColor)
+                        }
+                        
+                        TextButton(
+                            onClick = onDismiss,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Cancelar", color = Color.Gray)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SimpleTipsModal(
+    onDismiss: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.8f)
+                .padding(16.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp)
+            ) {
+                // Header
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 20.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "💡 Tips para mejores fotos",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF4CAF50)
+                    )
+                }
+                
+                // Tips list
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    TipCard(
+                        emoji = "☀️",
+                        title = "Buena iluminación",
+                        description = "Usa luz natural o asegúrate de que la etiqueta esté bien iluminada",
+                        color = Color(0xFFFF5722)
+                    )
+                    
+                    TipCard(
+                        emoji = "🎯",
+                        title = "Enfoque nítido",
+                        description = "Asegúrate de que el texto de la etiqueta se vea claramente",
+                        color = Color(0xFF4CAF50)
+                    )
+                    
+                    TipCard(
+                        emoji = "📐",
+                        title = "Imagen derecha",
+                        description = "Mantén la etiqueta derecha y evita ángulos inclinados",
+                        color = Color(0xFF2196F3)
+                    )
+                    
+                    TipCard(
+                        emoji = "🔍",
+                        title = "Distancia correcta",
+                        description = "Acércate lo suficiente para que la etiqueta llene la imagen",
+                        color = Color(0xFF9C27B0)
+                    )
+                    
+                    TipCard(
+                        emoji = "🚫",
+                        title = "Evita reflejos",
+                        description = "Inclina ligeramente la cámara para evitar reflejos en la etiqueta",
+                        color = Color(0xFF607D8B)
+                    )
+                    
+                    TipCard(
+                        emoji = "✂️",
+                        title = "Solo la etiqueta",
+                        description = "Enfócate únicamente en la etiqueta nutricional del producto",
+                        color = Color(0xFFF44336)
+                    )
+                }
+                
+                // Close button
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
+                ) {
+                    Text("✅ Entendido", color = Color.White)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun TipCard(
+    emoji: String,
+    title: String,
+    description: String,
+    color: Color
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.1f)),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = emoji,
+                fontSize = 24.sp,
+                modifier = Modifier.padding(end = 12.dp)
+            )
+            
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = title,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = color,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+                
+                Text(
+                    text = description,
+                    fontSize = 14.sp,
+                    color = Color.Gray,
+                    lineHeight = 20.sp
+                )
             }
         }
     }

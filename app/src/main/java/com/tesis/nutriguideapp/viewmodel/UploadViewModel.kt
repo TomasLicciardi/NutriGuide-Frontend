@@ -6,9 +6,10 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.gson.Gson
 import com.tesis.nutriguideapp.api.AnalysisService
 import com.tesis.nutriguideapp.api.RetrofitInstance
-import com.tesis.nutriguideapp.model.AnalysisResponse
+import com.tesis.nutriguideapp.model.*
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
@@ -21,24 +22,36 @@ class UploadViewModel : ViewModel() {
     private val _imageUri = mutableStateOf<Uri?>(null)
     val imageUri: State<Uri?> = _imageUri
 
-    private val _analyzing = mutableStateOf(false)
-    val analyzing: State<Boolean> = _analyzing
+    // 🆕 CAMBIO: Usar AnalysisResult en lugar de estados separados
+    private val _analysisState = mutableStateOf<AnalysisResult>(AnalysisResult.Loading)
+    val analysisState: State<AnalysisResult> = _analysisState
 
     private val _uploading = mutableStateOf(false)
     val uploading: State<Boolean> = _uploading
 
+    // 🆕 ESTADO PARA CONTROLAR MODALES
+    private val _showErrorModal = mutableStateOf(false)
+    val showErrorModal: State<Boolean> = _showErrorModal
+
+    // 🆕 MANTENER COMPATIBILIDAD CON CÓDIGO EXISTENTE
     private val _analysisResponse = mutableStateOf<AnalysisResponse?>(null)
     val analysisResponse: State<AnalysisResponse?> = _analysisResponse
 
     private val _error = mutableStateOf<String?>(null)
     val error: State<String?> = _error
+
+    private val _analyzing = mutableStateOf(false)
+    val analyzing: State<Boolean> = _analyzing
     
     fun setImageUri(uri: Uri?) {
         _imageUri.value = uri
         _analysisResponse.value = null
+        _analysisState.value = AnalysisResult.Loading
         _error.value = null
+        _showErrorModal.value = false
     }
 
+    // 🆕 FUNCIÓN MEJORADA PARA ANALIZAR IMAGEN
     fun analyzeImage(context: Context) {
         val uri = _imageUri.value ?: run {
             _error.value = "Por favor, selecciona una imagen"
@@ -46,7 +59,9 @@ class UploadViewModel : ViewModel() {
         }
 
         _analyzing.value = true
+        _analysisState.value = AnalysisResult.Loading
         _error.value = null
+        _showErrorModal.value = false
 
         viewModelScope.launch {
             try {
@@ -63,35 +78,141 @@ class UploadViewModel : ViewModel() {
                 val service = RetrofitInstance.getAuthenticatedRetrofit(context)
                     .create(AnalysisService::class.java)
                 val response = service.analyzeImage(imagePart)
-                  if (response.isSuccessful) {
+
+                // 🆕 MANEJO MEJORADO DE RESPUESTAS
+                if (response.isSuccessful) {
                     val analysisResult = response.body()
                     if (analysisResult != null) {
                         _analysisResponse.value = analysisResult
+                        _analysisState.value = AnalysisResult.Success(analysisResult)
                         android.util.Log.d("UploadViewModel", "Análisis exitoso: ${analysisResult.productId}")
                     } else {
-                        _error.value = "La respuesta del servidor está vacía"
-                        android.util.Log.e("UploadViewModel", "Response body es null a pesar del código 200")
+                        val errorMsg = "La respuesta del servidor está vacía"
+                        _error.value = errorMsg
+                        _analysisState.value = AnalysisResult.ServerError(errorMsg)
+                        _showErrorModal.value = true
                     }
                 } else {
-                    val errorBody = response.errorBody()?.string()
-                    val errorMessage = "Error al analizar la imagen: ${response.code()} - ${response.message()}"
-                    _error.value = if (errorBody != null) "$errorMessage\n$errorBody" else errorMessage
-                    android.util.Log.e("UploadViewModel", "Error HTTP al analizar imagen: ${response.code()} - ${response.message()}")
-                    android.util.Log.e("UploadViewModel", "Error body: $errorBody")
+                    // 🆕 MANEJO ESPECÍFICO POR CÓDIGO DE ERROR
+                    handleErrorResponse(response.code(), response.errorBody()?.string())
                 }
             } catch (e: java.net.SocketTimeoutException) {
-                _error.value = "Tiempo de espera agotado. La petición tardó demasiado en completarse."
+                val errorMsg = "Tiempo de espera agotado"
+                _error.value = errorMsg
+                _analysisState.value = AnalysisResult.NetworkError(
+                    message = errorMsg,
+                    instructions = "La imagen puede ser demasiado grande. Intenta con una imagen más pequeña."
+                )
+                _showErrorModal.value = true
                 android.util.Log.e("UploadViewModel", "Timeout al analizar imagen", e)
             } catch (e: java.io.IOException) {
-                _error.value = "Error de conexión: ${e.message ?: "Verifica tu conexión a internet"}"
+                val errorMsg = "Error de conexión: ${e.message ?: "Verifica tu conexión a internet"}"
+                _error.value = errorMsg
+                _analysisState.value = AnalysisResult.NetworkError(errorMsg)
+                _showErrorModal.value = true
                 android.util.Log.e("UploadViewModel", "Error de IO al analizar imagen", e)
             } catch (e: Exception) {
-                _error.value = "Error inesperado: ${e.message}"
+                val errorMsg = "Error inesperado: ${e.message}"
+                _error.value = errorMsg
+                _analysisState.value = AnalysisResult.ServerError(errorMsg)
+                _showErrorModal.value = true
                 android.util.Log.e("UploadViewModel", "Error general al analizar imagen", e)
             } finally {
                 _analyzing.value = false
             }
         }
+    }
+
+    // 🆕 FUNCIÓN PARA MANEJAR ERRORES ESPECÍFICOS
+    private fun handleErrorResponse(statusCode: Int, errorBody: String?) {
+        android.util.Log.e("UploadViewModel", "Error HTTP $statusCode: $errorBody")
+        
+        try {
+            val gson = Gson()
+            val errorResponse = gson.fromJson(errorBody, BackendErrorResponse::class.java)
+            val errorDetail = errorResponse.getErrorData() // 🆕 Usar función helper
+            
+            when (statusCode) {
+                400 -> {
+                    _analysisState.value = AnalysisResult.ImageError(
+                        errorType = errorDetail.error,
+                        message = errorDetail.message,
+                        instructions = errorDetail.instructions
+                    )
+                    _error.value = errorDetail.message
+                }
+                422 -> {
+                    android.util.Log.d("UploadViewModel", "Error 422 detectado - Confianza insuficiente")
+                    _analysisState.value = AnalysisResult.LowConfidenceError(
+                        message = errorDetail.message,
+                        instructions = errorDetail.instructions
+                    )
+                    _error.value = errorDetail.message
+                    android.util.Log.d("UploadViewModel", "Estado cambiado a LowConfidenceError: ${errorDetail.message}")
+                }
+                429 -> {
+                    _analysisState.value = AnalysisResult.RateLimitError()
+                    _error.value = "Demasiadas solicitudes"
+                }
+                500 -> {
+                    _analysisState.value = AnalysisResult.ServerError(
+                        message = errorDetail.message,
+                        instructions = errorDetail.instructions
+                    )
+                    _error.value = errorDetail.message
+                }
+                else -> {
+                    _analysisState.value = AnalysisResult.ServerError("Error desconocido: $statusCode")
+                    _error.value = "Error desconocido: $statusCode"
+                }
+            }
+        } catch (e: Exception) {
+            // Si no se puede parsear el error, usar manejo genérico
+            val genericError = when (statusCode) {
+                400 -> AnalysisResult.ImageError(
+                    errorType = "invalid_image",
+                    message = "Imagen no válida",
+                    instructions = "Toma una foto de la etiqueta nutricional del producto"
+                )
+                422 -> AnalysisResult.LowConfidenceError(
+                    message = "Análisis con baja confianza",
+                    instructions = "Toma una foto más clara de la etiqueta"
+                )
+                429 -> AnalysisResult.RateLimitError()
+                500 -> AnalysisResult.ServerError()
+                else -> AnalysisResult.ServerError("Error HTTP: $statusCode")
+            }
+            
+            _analysisState.value = genericError
+            _error.value = when (genericError) {
+                is AnalysisResult.ImageError -> genericError.message
+                is AnalysisResult.LowConfidenceError -> genericError.message
+                is AnalysisResult.RateLimitError -> genericError.message
+                is AnalysisResult.ServerError -> genericError.message
+                else -> "Error desconocido"
+            }
+        }
+        
+        _showErrorModal.value = true
+        android.util.Log.d("UploadViewModel", "Modal de error activado - Estado: ${_analysisState.value}")
+    }
+
+    // 🆕 FUNCIONES PARA CONTROLAR MODALES
+    fun dismissErrorModal() {
+        _showErrorModal.value = false
+    }
+
+    fun retryAnalysis(context: Context) {
+        dismissErrorModal()
+        analyzeImage(context)
+    }
+
+    fun clearAnalysisAndRetakePhoto() {
+        _analysisState.value = AnalysisResult.Loading
+        _analysisResponse.value = null
+        _error.value = null
+        _showErrorModal.value = false
+        // Mantener la URI para permitir reanalizar la misma imagen si es necesario
     }
 
     fun uploadProduct(context: Context, onSuccess: () -> Unit) {
