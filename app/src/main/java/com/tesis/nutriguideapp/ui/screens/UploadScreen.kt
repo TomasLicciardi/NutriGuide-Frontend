@@ -286,27 +286,6 @@ fun UploadScreen(
                         )
                     }
                 }
-                
-                // 🆕 BOTÓN DE DEBUG TEMPORAL PARA SIMULAR ERROR 422
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                OutlinedButton(
-                    onClick = {
-                        android.util.Log.d("UploadScreen", "Simulando error de confianza baja")
-                        viewModel.simulateLowConfidenceError()
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(40.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    border = BorderStroke(1.dp, Color.Red)
-                ) {
-                    Text(
-                        text = "🔧 DEBUG: Simular Error 422",
-                        fontSize = 12.sp,
-                        color = Color.Red
-                    )
-                }
             }
         }
         

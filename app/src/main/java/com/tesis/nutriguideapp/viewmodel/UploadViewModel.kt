@@ -184,7 +184,7 @@ class UploadViewModel : ViewModel() {
                     instructions = "Toma una foto de la etiqueta nutricional del producto"
                 )
                 422 -> AnalysisResult.LowConfidenceError(
-                    message = "Análisis con baja confianza",
+                    message = "No se puede visualizar correctamente la imagen",
                     instructions = "Toma una foto más clara de la etiqueta"
                 )
                 429 -> AnalysisResult.RateLimitError()

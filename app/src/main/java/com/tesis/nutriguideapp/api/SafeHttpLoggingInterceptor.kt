@@ -127,7 +127,7 @@ class SafeHttpLoggingInterceptor : Interceptor {
                         try {
                             // 🆕 Crear un error más específico según el código de estado
                             val errorJson = when (response.code) {
-                                422 -> """{"error":"low_confidence","message":"Análisis con baja confianza","instructions":"Toma una foto más clara de la etiqueta completa"}"""
+                                422 -> """{"error":"low_confidence","message":"No se puede visualizar correctamente la imagen","instructions":"Toma una foto más clara de la etiqueta completa"}"""
                                 400 -> """{"error":"invalid_image","message":"Imagen no válida","instructions":"Toma una foto de la etiqueta nutricional del producto"}"""
                                 else -> """{"error":"server_error","message":"Error del servidor","instructions":"Intenta nuevamente en unos momentos"}"""
                             }

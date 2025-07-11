@@ -269,15 +269,10 @@ fun CameraScreen(
         }
     )
 
-    val currentAnalysisState = analysisState
-    android.util.Log.d(
-        "CameraScreen",
-        "Evaluando estado para mostrar modales: $currentAnalysisState, Modal visible: $showErrorModal"
-    )
-
-    when (currentAnalysisState) {
+    // 🆕 MODALES DE ERRORES ESPECÍFICOS
+    when (val state = analysisState) {
         is AnalysisResult.ImageError -> {
-            val (title, color) = when (currentAnalysisState.errorType) {
+            val (title, color) = when (state.errorType) {
                 "invalid_image" -> "❌ Imagen no válida" to Color(0xFFFF5722)
                 "poor_quality" -> "⚠️ Imagen borrosa" to Color(0xFFFF9800)
                 "no_ingredients" -> "🔍 Ingredientes no detectados" to Color(0xFF9C27B0)
@@ -287,8 +282,8 @@ fun CameraScreen(
             SimpleErrorModal(
                 isVisible = showErrorModal,
                 title = title,
-                message = currentAnalysisState.message,
-                instructions = currentAnalysisState.instructions,
+                message = state.message,
+                instructions = state.instructions,
                 primaryButtonText = "📷 Tomar otra foto",
                 onPrimaryClick = {
                     viewModel.dismissErrorModal()
@@ -310,9 +305,9 @@ fun CameraScreen(
         is AnalysisResult.LowConfidenceError -> {
             SimpleErrorModal(
                 isVisible = showErrorModal,
-                title = "⚠️ Análisis con baja confianza",
-                message = currentAnalysisState.message,
-                instructions = currentAnalysisState.instructions,
+                title = "⚠️ Imagen no se visualiza correctamente",
+                message = state.message,
+                instructions = state.instructions,
                 primaryButtonText = "📷 Tomar otra foto",
                 onPrimaryClick = {
                     viewModel.dismissErrorModal()
@@ -335,8 +330,8 @@ fun CameraScreen(
             SimpleErrorModal(
                 isVisible = showErrorModal,
                 title = "❌ Error del servidor",
-                message = currentAnalysisState.message,
-                instructions = currentAnalysisState.instructions,
+                message = state.message,
+                instructions = state.instructions,
                 primaryButtonText = "🔄 Reintentar",
                 onPrimaryClick = {
                     viewModel.dismissErrorModal()
@@ -353,8 +348,8 @@ fun CameraScreen(
             SimpleErrorModal(
                 isVisible = showErrorModal,
                 title = "📶 Error de conexión",
-                message = currentAnalysisState.message,
-                instructions = currentAnalysisState.instructions,
+                message = state.message,
+                instructions = state.instructions,
                 primaryButtonText = "🔄 Reintentar",
                 onPrimaryClick = {
                     viewModel.dismissErrorModal()
@@ -371,8 +366,8 @@ fun CameraScreen(
             SimpleErrorModal(
                 isVisible = showErrorModal,
                 title = "⏳ Límite de solicitudes",
-                message = currentAnalysisState.message,
-                instructions = currentAnalysisState.instructions,
+                message = state.message,
+                instructions = state.instructions,
                 primaryButtonText = "🔄 Reintentar",
                 onPrimaryClick = {
                     viewModel.dismissErrorModal()
@@ -437,9 +432,9 @@ fun CameraPreview(
     )
 }
 
-private fun getOutputDirectory(context: Context): File {
+fun getOutputDirectory(context: Context): File {
     val mediaDir = context.externalMediaDirs.firstOrNull()?.let {
-        File(it, "NutriGuide").apply { mkdirs() }
+        File(it, context.packageName).apply { mkdirs() }
     }
     return if (mediaDir != null && mediaDir.exists()) mediaDir else context.filesDir
 }
