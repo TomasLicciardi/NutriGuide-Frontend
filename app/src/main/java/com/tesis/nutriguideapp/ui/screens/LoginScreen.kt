@@ -138,37 +138,29 @@ fun LoginScreen(
                     // Botón login
                     Button(
                         onClick = {
-                            try {
-                                viewModel.login(
-                                    context = context,
-                                    onSuccess = {
-                                        coroutineScope.launch {
-                                            try {
-                                                snackbarHostState.showSnackbar("Login exitoso")
-                                                onLoginSuccess()
-                                            } catch (e: Exception) {
-                                                android.util.Log.e("LoginScreen", "Error en callback de éxito", e)
-                                                snackbarHostState.showSnackbar("Error al navegar: ${e.message}")
-                                            }
-                                        }
-                                    },
-                                    onError = { error ->
-                                        coroutineScope.launch {
-                                            try {
-                                                android.util.Log.e("LoginScreen", "Error de login: $error")
-                                                snackbarHostState.showSnackbar(error)
-                                            } catch (e: Exception) {
-                                                android.util.Log.e("LoginScreen", "Error al mostrar mensaje de error", e)
-                                            }
+                            viewModel.login(
+                                context = context,
+                                onSuccess = {
+                                    coroutineScope.launch {
+                                        try {
+                                            android.util.Log.d("LoginScreen", "Login exitoso - navegando inmediatamente")
+                                            
+                                            // Navegar inmediatamente sin delay
+                                            onLoginSuccess()
+                                            android.util.Log.d("LoginScreen", "Navegación completada")
+                                        } catch (e: Exception) {
+                                            android.util.Log.e("LoginScreen", "Error al navegar: ${e.message}", e)
+                                            snackbarHostState.showSnackbar("Error al navegar: ${e.message}")
                                         }
                                     }
-                                )
-                            } catch (e: Exception) {
-                                android.util.Log.e("LoginScreen", "Excepción en proceso de login", e)
-                                coroutineScope.launch {
-                                    snackbarHostState.showSnackbar("Error inesperado: ${e.message}")
+                                },
+                                onError = { error ->
+                                    coroutineScope.launch {
+                                        android.util.Log.e("LoginScreen", "Error en login: $error")
+                                        snackbarHostState.showSnackbar(error)
+                                    }
                                 }
-                            }
+                            )
                         },
                         modifier = Modifier
                             .fillMaxWidth()
