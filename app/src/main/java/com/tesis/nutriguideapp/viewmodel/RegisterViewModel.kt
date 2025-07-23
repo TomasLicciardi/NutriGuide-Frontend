@@ -92,7 +92,7 @@ class RegisterViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 android.util.Log.d("RegisterViewModel", "Iniciando registro: ${_email.value}")
-                val service = RetrofitInstance.retrofit.create(AuthService::class.java)
+                val service = RetrofitInstance.authRetrofit.create(AuthService::class.java)
                 val request = RegisterRequest(
                     username = _username.value,
                     email = _email.value,
@@ -107,36 +107,14 @@ class RegisterViewModel : ViewModel() {
                     com.tesis.nutriguideapp.utils.ApiErrorHandler.processResponse(
                         response = registerResponse,
                         tag = "RegisterViewModel",
-                        onSuccess = { _ ->
-                            android.util.Log.d("RegisterViewModel", "Registro exitoso")
+                        onSuccess = { authResponse ->  // Ahora recibimos directamente el token
+                            android.util.Log.d("RegisterViewModel", "Registro exitoso con token")
                             
-                            // Inmediatamente después del registro exitoso, hacer login automático
-                            try {
-                                android.util.Log.d("RegisterViewModel", "Iniciando login automático")
-                                val loginResponse = service.login(AuthRequest(_email.value, _password.value))
-                                
-                                // Usar ApiErrorHandler para procesar la respuesta de login
-                                com.tesis.nutriguideapp.utils.ApiErrorHandler.processResponse(
-                                    response = loginResponse,
-                                    tag = "RegisterViewModel/Login",
-                                    onSuccess = { authResponse ->
-                                        android.util.Log.d("RegisterViewModel", "Login automático exitoso")
-                                        
-                                        // Guardar token
-                                        TokenManager(context).saveToken(authResponse.accessToken)
-                                        
-                                        // Ir directamente a la aplicación
-                                        onSuccess()
-                                    },
-                                    onError = { _ ->
-                                        android.util.Log.e("RegisterViewModel", "Error en login automático")
-                                        onError("Registro exitoso, pero error al iniciar sesión automáticamente. Por favor, inicia sesión manualmente.")
-                                    }
-                                )
-                            } catch (e: Exception) {
-                                android.util.Log.e("RegisterViewModel", "Error en login automático", e)
-                                onError("Registro exitoso, pero error al iniciar sesión automáticamente. Por favor, inicia sesión manualmente.")
-                            }
+                            // Guardar token directamente
+                            TokenManager(context).saveToken(authResponse.accessToken)
+                            
+                            // Ir directamente a la aplicación
+                            onSuccess()
                         },
                         onError = { errorMessage ->
                             onError(errorMessage)

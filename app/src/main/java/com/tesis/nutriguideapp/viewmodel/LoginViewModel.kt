@@ -51,7 +51,7 @@ class LoginViewModel : ViewModel() {
             try {
                 android.util.Log.d("LoginViewModel", "Iniciando login: ${_email.value}")
                 try {
-                    val service = RetrofitInstance.retrofit.create(AuthService::class.java)
+                    val service = RetrofitInstance.authRetrofit.create(AuthService::class.java)
 
                     try {
                         android.util.Log.d("LoginViewModel", "Enviando solicitud de login")

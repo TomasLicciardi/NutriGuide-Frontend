@@ -17,7 +17,15 @@ object RetrofitInstance {
         .registerTypeAdapter(ProductAnalysis::class.java, ProductAnalysisDeserializer())
         .create()
 
-    // Cliente HTTP para peticiones sin autenticación
+    // Cliente HTTP optimizado para autenticación (login/register)
+    private val authOkHttpClient = OkHttpClient.Builder()
+        .connectTimeout(8, TimeUnit.SECONDS)   // Más agresivo
+        .readTimeout(10, TimeUnit.SECONDS)     // Más agresivo 
+        .writeTimeout(8, TimeUnit.SECONDS)     // Más agresivo
+        .retryOnConnectionFailure(false)       // Sin reintentos para auth
+        .build()
+
+    // Cliente HTTP para peticiones sin autenticación (análisis de imágenes, etc.)
     private val okHttpClient = OkHttpClient.Builder()
         .addInterceptor(SafeHttpLoggingInterceptor().apply {
             level = SafeHttpLoggingInterceptor.Level.BODY
@@ -28,6 +36,13 @@ object RetrofitInstance {
         .readTimeout(60, TimeUnit.SECONDS)
         .writeTimeout(60, TimeUnit.SECONDS)
         .retryOnConnectionFailure(true)
+        .build()
+
+    // Retrofit para autenticación (sin interceptores pesados)
+    val authRetrofit: Retrofit = Retrofit.Builder()
+        .baseUrl(BASE_URL)
+        .client(authOkHttpClient)
+        .addConverterFactory(GsonConverterFactory.create(gson))
         .build()
 
     // Retrofit sin autenticación

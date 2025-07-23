@@ -238,20 +238,14 @@ fun RegisterScreen(
                                 onSuccess = {
                                     coroutineScope.launch {
                                         try {
-                                            android.util.Log.d("RegisterScreen", "Registro y login automático exitoso")
-                                            snackbarHostState.showSnackbar("¡Bienvenido! Registro exitoso")
+                                            android.util.Log.d("RegisterScreen", "Registro exitoso - navegando inmediatamente")
                                             
-                                            android.util.Log.d("RegisterScreen", "Navegando directamente a home")
-                                            try {
-                                                onRegisterSuccess()
-                                                android.util.Log.d("RegisterScreen", "Navegación a home completada con éxito")
-                                            } catch (e: Exception) {
-                                                android.util.Log.e("RegisterScreen", "Error al navegar a home: ${e.message}", e)
-                                                snackbarHostState.showSnackbar("Error al navegar: ${e.message}")
-                                            }
+                                            // Navegar inmediatamente sin delay
+                                            onRegisterSuccess()
+                                            android.util.Log.d("RegisterScreen", "Navegación completada")
                                         } catch (e: Exception) {
-                                            android.util.Log.e("RegisterScreen", "Error general en proceso post-registro: ${e.message}", e)
-                                            snackbarHostState.showSnackbar("Error: ${e.message}")
+                                            android.util.Log.e("RegisterScreen", "Error al navegar: ${e.message}", e)
+                                            snackbarHostState.showSnackbar("Error al navegar: ${e.message}")
                                         }
                                     }
                                 },

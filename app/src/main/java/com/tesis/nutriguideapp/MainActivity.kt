@@ -47,7 +47,7 @@ class MainActivity : ComponentActivity() {
                                 context = applicationContext,
                                 onRegisterSuccess = {
                                     try {
-                                        navController.navigate("login") {
+                                        navController.navigate("home") {  // Ir directamente al home
                                             popUpTo("register") { inclusive = true }
                                         }
                                     } catch (e: Exception) {

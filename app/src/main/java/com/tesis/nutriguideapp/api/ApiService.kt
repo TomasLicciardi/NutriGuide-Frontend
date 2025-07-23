@@ -12,6 +12,6 @@ interface AuthService {
     suspend fun login(@Body request: AuthRequest): Response<AuthResponse>
 
     @POST("/auth/register")
-    suspend fun register(@Body request: RegisterRequest): Response<Map<String, String>>
+    suspend fun register(@Body request: RegisterRequest): Response<AuthResponse>
 }
 
