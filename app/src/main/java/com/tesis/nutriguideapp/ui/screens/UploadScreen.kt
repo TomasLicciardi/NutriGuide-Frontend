@@ -60,32 +60,11 @@ fun UploadScreen(
     // Estado para mostrar tips de fotografía
     var showTipsModal by remember { mutableStateOf(false) }
     
-    // Launcher para selector de archivos
+    // Launcher para galería
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         viewModel.setImageUri(uri)
-    }
-    
-    // Launcher alternativo para más opciones
-    val intentLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        result.data?.data?.let { uri ->
-            viewModel.setImageUri(uri)
-        }
-    }
-    
-    // Función para abrir selector con más opciones
-    fun openFileSelector() {
-        val intent = Intent().apply {
-            type = "image/*"
-            action = Intent.ACTION_GET_CONTENT
-            addCategory(Intent.CATEGORY_OPENABLE)
-            putExtra(Intent.EXTRA_LOCAL_ONLY, true)
-        }
-        val chooser = Intent.createChooser(intent, "Seleccionar imagen desde...")
-        intentLauncher.launch(chooser)
     }
 
     Scaffold(
@@ -179,9 +158,9 @@ fun UploadScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
             
-            // Botones de acción
+            // Botón para galería
             Button(
-                onClick = { openFileSelector() },
+                onClick = { launcher.launch("image/*") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
@@ -191,39 +170,14 @@ fun UploadScreen(
                 )
             ) {
                 Icon(
-                    imageVector = Icons.Default.FolderOpen,
-                    contentDescription = "Seleccionar imagen",
+                    imageVector = Icons.Default.AddPhotoAlternate,
+                    contentDescription = "Seleccionar de galería",
                     modifier = Modifier.size(24.dp)
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = "SELECCIONAR DESDE ARCHIVOS",
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            // Botón alternativo para galería tradicional
-            OutlinedButton(
-                onClick = { launcher.launch("image/*") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.AddPhotoAlternate,
-                    contentDescription = "Seleccionar de galería",
-                    modifier = Modifier.size(24.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
                     text = "SELECCIONAR DE GALERÍA",
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.primary
+                    fontWeight = FontWeight.SemiBold
                 )
             }
             
@@ -389,6 +343,7 @@ fun UploadScreen(
                             for (entry in restrictionsNotSuitable) {
                                 if (count >= 3) break
                                 val restriction = entry.key
+                                val restrictionData = entry.value
                                 Card(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -398,13 +353,26 @@ fun UploadScreen(
                                         containerColor = Color(0xFFFFF3E0)
                                     )
                                 ) {
-                                    Text(
-                                        text = "• ${restriction.uppercase()}",
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 13.sp,
-                                        color = Color(0xFFFF9800),
+                                    Column(
                                         modifier = Modifier.padding(12.dp)
-                                    )
+                                    ) {
+                                        Text(
+                                            text = "• ${restriction.uppercase()}",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 13.sp,
+                                            color = Color(0xFFFF9800)
+                                        )
+                                        // Mostrar la explicación si está disponible
+                                        if (!restrictionData.razon.isNullOrBlank()) {
+                                            Text(
+                                                text = restrictionData.razon,
+                                                fontSize = 12.sp,
+                                                color = Color(0xFF666666),
+                                                style = MaterialTheme.typography.bodySmall,
+                                                modifier = Modifier.padding(top = 4.dp)
+                                            )
+                                        }
+                                    }
                                 }
                                 count++
                             }
