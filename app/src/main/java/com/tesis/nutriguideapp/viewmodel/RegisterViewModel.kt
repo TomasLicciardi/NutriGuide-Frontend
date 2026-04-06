@@ -9,6 +9,7 @@ import com.tesis.nutriguideapp.api.AuthService
 import com.tesis.nutriguideapp.api.RetrofitInstance
 import com.tesis.nutriguideapp.model.RegisterRequest
 import com.tesis.nutriguideapp.model.AuthRequest
+import com.tesis.nutriguideapp.utils.RestrictionMapper
 import com.tesis.nutriguideapp.utils.TokenManager
 import kotlinx.coroutines.launch
 
@@ -27,10 +28,7 @@ class RegisterViewModel : ViewModel() {
 
     private val _selectedRestrictions = mutableStateOf<List<String>>(emptyList())
     val selectedRestrictions: State<List<String>> = _selectedRestrictions
-    private val _availableRestrictions = mutableStateOf(listOf(
-        "Sin gluten", "Sin lactosa", "Vegano", 
-        "Sin frutos secos"
-    ))
+    private val _availableRestrictions = mutableStateOf(RestrictionMapper.allDisplayNames)
     val availableRestrictions: State<List<String>> = _availableRestrictions
 
     private val _loading = mutableStateOf(false)
@@ -97,7 +95,7 @@ class RegisterViewModel : ViewModel() {
                     username = _username.value,
                     email = _email.value,
                     password = _password.value,
-                    restrictions = _selectedRestrictions.value
+                    restrictions = RestrictionMapper.toApiNames(_selectedRestrictions.value)
                 )
                 try {
                     android.util.Log.d("RegisterViewModel", "Enviando solicitud de registro")

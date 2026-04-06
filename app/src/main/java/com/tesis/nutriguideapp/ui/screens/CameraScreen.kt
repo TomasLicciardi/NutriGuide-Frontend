@@ -23,6 +23,9 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Camera
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -43,8 +46,9 @@ import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.tesis.nutriguideapp.model.AnalysisResult
 import com.tesis.nutriguideapp.ui.theme.Green40
+import com.tesis.nutriguideapp.ui.theme.GreenPrimary
+import com.tesis.nutriguideapp.utils.RestrictionMapper
 import com.tesis.nutriguideapp.viewmodel.CameraViewModel
-import kotlinx.coroutines.delay
 import java.io.File
 import java.util.concurrent.Executor
 
@@ -63,7 +67,7 @@ fun CameraScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val analyzeSuccess by viewModel.analyzeSuccess.collectAsState()
-    val productId by viewModel.productId.collectAsState()
+    val analysisResponse by viewModel.analysisResponse.collectAsState()
 
     val analysisState by viewModel.analysisState.collectAsState()
     val showErrorModal by viewModel.showErrorModal.collectAsState()
@@ -105,23 +109,8 @@ fun CameraScreen(
 
     LaunchedEffect(error) {
         error?.let {
-            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
-        }
-    }
-
-    LaunchedEffect(analyzeSuccess, productId) {
-        if (analyzeSuccess && productId != null) {
-            delay(300)
-            try {
-                navController.navigate("product_detail/$productId") {
-                    popUpTo("camera") { inclusive = true }
-                }
-            } catch (e: Exception) {
-                Toast.makeText(
-                    context,
-                    "Error al navegar: ${e.message}",
-                    Toast.LENGTH_LONG
-                ).show()
+            if (!analyzeSuccess) {
+                Toast.makeText(context, it, Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -269,124 +258,217 @@ fun CameraScreen(
         }
     )
 
-    // 🆕 MODALES DE ERRORES ESPECÍFICOS
+    // Dialog de resultado exitoso
+    if (analyzeSuccess && analysisResponse != null) {
+        val response = analysisResponse!!
+        AlertDialog(
+            onDismissRequest = { },
+            title = {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Resultado del Análisis",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = GreenPrimary
+                    )
+                    IconButton(onClick = {
+                        viewModel.clearAnalysisAndRetakePhoto()
+                    }) {
+                        Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = Color.Gray)
+                    }
+                }
+            },
+            text = {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (response.userVerdict) Color(0xFFE8F5E9) else Color(0xFFFFEBEE)
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = if (response.userVerdict) Icons.Default.CheckCircle else Icons.Default.Cancel,
+                                contentDescription = "Aptitud",
+                                tint = if (response.userVerdict) Color(0xFF4CAF50) else Color(0xFFF44336),
+                                modifier = Modifier.size(32.dp)
+                            )
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Column {
+                                Text(
+                                    text = if (response.userVerdict) "Producto APTO" else "Producto NO APTO",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp
+                                )
+                                Text(
+                                    text = if (response.userVerdict) "Seguro según tus restricciones" else "Contiene ingredientes restringidos",
+                                    fontSize = 14.sp,
+                                    color = Color.Gray
+                                )
+                            }
+                        }
+                    }
+
+                    val restrictionsNotSuitable = response.restrictions.filter { !it.value.apto }
+                    if (restrictionsNotSuitable.isNotEmpty()) {
+                        Text(
+                            text = "Restricciones detectadas:",
+                            fontWeight = FontWeight.SemiBold,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(bottom = 8.dp),
+                            color = Color(0xFFFF9800)
+                        )
+                        restrictionsNotSuitable.entries.take(3).forEach { (key, value) ->
+                            Card(
+                                modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0))
+                            ) {
+                                Column(modifier = Modifier.padding(12.dp)) {
+                                    Text(
+                                        text = RestrictionMapper.toDisplayName(key).uppercase(),
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp,
+                                        color = Color(0xFFFF9800)
+                                    )
+                                    if (!value.motivo.isNullOrBlank()) {
+                                        Text(
+                                            text = value.motivo,
+                                            fontSize = 12.sp,
+                                            color = Color(0xFF666666),
+                                            modifier = Modifier.padding(top = 4.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = {
+                            viewModel.clearAnalysisAndRetakePhoto()
+                            navController.navigate("home") {
+                                popUpTo("home") { inclusive = true }
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(Icons.Default.Home, contentDescription = "Inicio", modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Inicio")
+                    }
+                    OutlinedButton(
+                        onClick = { viewModel.clearAnalysisAndRetakePhoto() },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Otra foto", modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Otra Foto")
+                    }
+                }
+            },
+            dismissButton = { }
+        )
+    }
+
+    // Modales de errores específicos
     when (val state = analysisState) {
         is AnalysisResult.ImageError -> {
             val (title, color) = when (state.errorType) {
-                "invalid_image" -> "❌ Imagen no válida" to Color(0xFFFF5722)
-                "poor_quality" -> "⚠️ Imagen borrosa" to Color(0xFFFF9800)
-                "no_ingredients" -> "🔍 Ingredientes no detectados" to Color(0xFF9C27B0)
+                "invalid_image" -> "Imagen no válida" to Color(0xFFFF5722)
+                "poor_quality" -> "Imagen borrosa" to Color(0xFFFF9800)
+                "no_ingredients" -> "Ingredientes no detectados" to Color(0xFF9C27B0)
                 else -> "Error" to Color.Red
             }
-
             SimpleErrorModal(
                 isVisible = showErrorModal,
                 title = title,
                 message = state.message,
                 instructions = state.instructions,
-                primaryButtonText = "📷 Tomar otra foto",
-                onPrimaryClick = {
-                    viewModel.dismissErrorModal()
-                    viewModel.clearAnalysisAndRetakePhoto()
-                },
-                secondaryButtonText = "💡 Ver Tips",
-                onSecondaryClick = {
-                    viewModel.dismissErrorModal()
-                    showTipsModal = true
-                },
-                onDismiss = {
-                    viewModel.dismissErrorModal()
-                    viewModel.clearAnalysisAndRetakePhoto()
-                },
+                primaryButtonText = "Tomar otra foto",
+                onPrimaryClick = { viewModel.dismissErrorModal(); viewModel.clearAnalysisAndRetakePhoto() },
+                secondaryButtonText = "Ver Tips",
+                onSecondaryClick = { viewModel.dismissErrorModal(); showTipsModal = true },
+                onDismiss = { viewModel.dismissErrorModal(); viewModel.clearAnalysisAndRetakePhoto() },
                 primaryColor = color
             )
         }
-
         is AnalysisResult.LowConfidenceError -> {
             SimpleErrorModal(
                 isVisible = showErrorModal,
-                title = "⚠️ Imagen no se visualiza correctamente",
+                title = "Imagen no se visualiza correctamente",
                 message = state.message,
                 instructions = state.instructions,
-                primaryButtonText = "📷 Tomar otra foto",
-                onPrimaryClick = {
-                    viewModel.dismissErrorModal()
-                    viewModel.clearAnalysisAndRetakePhoto()
-                },
-                secondaryButtonText = "💡 Ver Tips",
-                onSecondaryClick = {
-                    viewModel.dismissErrorModal()
-                    showTipsModal = true
-                },
-                onDismiss = {
-                    viewModel.dismissErrorModal()
-                    viewModel.clearAnalysisAndRetakePhoto()
-                },
+                primaryButtonText = "Tomar otra foto",
+                onPrimaryClick = { viewModel.dismissErrorModal(); viewModel.clearAnalysisAndRetakePhoto() },
+                secondaryButtonText = "Ver Tips",
+                onSecondaryClick = { viewModel.dismissErrorModal(); showTipsModal = true },
+                onDismiss = { viewModel.dismissErrorModal(); viewModel.clearAnalysisAndRetakePhoto() },
                 primaryColor = Color(0xFFFF9800)
             )
         }
-
         is AnalysisResult.ServerError -> {
             SimpleErrorModal(
                 isVisible = showErrorModal,
-                title = "❌ Error del servidor",
+                title = "Error del servidor",
                 message = state.message,
                 instructions = state.instructions,
-                primaryButtonText = "🔄 Reintentar",
-                onPrimaryClick = {
-                    viewModel.dismissErrorModal()
-                    viewModel.analyzeImage(context)
-                },
+                primaryButtonText = "Reintentar",
+                onPrimaryClick = { viewModel.dismissErrorModal(); viewModel.analyzeImage(context) },
                 secondaryButtonText = "Cancelar",
                 onSecondaryClick = { viewModel.dismissErrorModal() },
                 onDismiss = { viewModel.dismissErrorModal() },
                 primaryColor = Color(0xFFF44336)
             )
         }
-
         is AnalysisResult.NetworkError -> {
             SimpleErrorModal(
                 isVisible = showErrorModal,
-                title = "📶 Error de conexión",
+                title = "Error de conexión",
                 message = state.message,
                 instructions = state.instructions,
-                primaryButtonText = "🔄 Reintentar",
-                onPrimaryClick = {
-                    viewModel.dismissErrorModal()
-                    viewModel.analyzeImage(context)
-                },
+                primaryButtonText = "Reintentar",
+                onPrimaryClick = { viewModel.dismissErrorModal(); viewModel.analyzeImage(context) },
                 secondaryButtonText = "Cancelar",
                 onSecondaryClick = { viewModel.dismissErrorModal() },
                 onDismiss = { viewModel.dismissErrorModal() },
                 primaryColor = Color(0xFF607D8B)
             )
         }
-
         is AnalysisResult.RateLimitError -> {
             SimpleErrorModal(
                 isVisible = showErrorModal,
-                title = "⏳ Límite de solicitudes",
+                title = "Límite de solicitudes",
                 message = state.message,
                 instructions = state.instructions,
-                primaryButtonText = "🔄 Reintentar",
-                onPrimaryClick = {
-                    viewModel.dismissErrorModal()
-                    viewModel.analyzeImage(context)
-                },
+                primaryButtonText = "Reintentar",
+                onPrimaryClick = { viewModel.dismissErrorModal(); viewModel.analyzeImage(context) },
                 secondaryButtonText = "Cancelar",
                 onSecondaryClick = { viewModel.dismissErrorModal() },
                 onDismiss = { viewModel.dismissErrorModal() },
                 primaryColor = Color(0xFF2196F3)
             )
         }
-
         else -> Unit
     }
 
     if (showTipsModal) {
-        SimpleTipsModal(
-            onDismiss = { showTipsModal = false }
-        )
+        SimpleTipsModal(onDismiss = { showTipsModal = false })
     }
 }
 
@@ -406,11 +488,9 @@ fun CameraPreview(
 
             cameraProviderFuture.addListener({
                 val cameraProvider = cameraProviderFuture.get()
-
                 val preview = Preview.Builder().build().also {
                     it.setSurfaceProvider(previewView.surfaceProvider)
                 }
-
                 val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
                 try {
@@ -421,9 +501,7 @@ fun CameraPreview(
                         preview,
                         imageCapture
                     )
-                } catch (e: Exception) {
-                    // Error al enlazar casos de uso
-                }
+                } catch (_: Exception) { }
             }, ContextCompat.getMainExecutor(context))
 
             previewView

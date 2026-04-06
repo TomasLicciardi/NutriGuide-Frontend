@@ -31,6 +31,7 @@ import com.tesis.nutriguideapp.viewmodel.UploadViewModel
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.text.style.TextAlign
 import com.tesis.nutriguideapp.model.AnalysisResult
+import com.tesis.nutriguideapp.utils.RestrictionMapper
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -282,7 +283,7 @@ fun UploadScreen(
                                 .padding(bottom = 16.dp),
                             shape = RoundedCornerShape(12.dp),
                             colors = CardDefaults.cardColors(
-                                containerColor = if (analysisResponse?.suitable == true) 
+                                containerColor = if (analysisResponse?.userVerdict == true) 
                                     Color(0xFFE8F5E9) else Color(0xFFFFEBEE)
                             )
                         ) {
@@ -293,25 +294,25 @@ fun UploadScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(
-                                    imageVector = if (analysisResponse?.suitable == true) 
+                                    imageVector = if (analysisResponse?.userVerdict == true) 
                                         Icons.Default.CheckCircle else Icons.Default.Cancel,
                                     contentDescription = "Aptitud",
-                                    tint = if (analysisResponse?.suitable == true) 
+                                    tint = if (analysisResponse?.userVerdict == true) 
                                         Color(0xFF4CAF50) else Color(0xFFF44336),
                                     modifier = Modifier.size(32.dp)
                                 )
                                 Spacer(modifier = Modifier.width(16.dp))
                                 Column {
                                     Text(
-                                        text = if (analysisResponse?.suitable == true) 
-                                            "✓ Producto APTO" 
+                                        text = if (analysisResponse?.userVerdict == true) 
+                                            "Producto APTO" 
                                         else 
-                                            "✗ Producto NO APTO",
+                                            "Producto NO APTO",
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 18.sp
                                     )
                                     Text(
-                                        text = if (analysisResponse?.suitable == true) 
+                                        text = if (analysisResponse?.userVerdict == true) 
                                             "Seguro según tus restricciones" 
                                         else 
                                             "Contiene ingredientes restringidos",
@@ -324,15 +325,13 @@ fun UploadScreen(
                         
                         // Restricciones detectadas si hay
                         val restrictionsNotSuitable = try {
-                            analysisResponse?.resultJson?.clasificacion?.filter { 
-                                !it.value.apto && !it.value.razon.isNullOrEmpty() 
-                            }
+                            analysisResponse?.restrictions?.filter { !it.value.apto }
                         } catch (e: Exception) {
                             null
                         }
-                          if (!restrictionsNotSuitable.isNullOrEmpty()) {
+                        if (!restrictionsNotSuitable.isNullOrEmpty()) {
                             Text(
-                                text = "⚠️ Restricciones detectadas:",
+                                text = "Restricciones detectadas:",
                                 fontWeight = FontWeight.SemiBold,
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.padding(bottom = 8.dp),
@@ -357,15 +356,14 @@ fun UploadScreen(
                                         modifier = Modifier.padding(12.dp)
                                     ) {
                                         Text(
-                                            text = "• ${restriction.uppercase()}",
+                                            text = "• ${RestrictionMapper.toDisplayName(restriction).uppercase()}",
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 13.sp,
                                             color = Color(0xFFFF9800)
                                         )
-                                        // Mostrar la explicación si está disponible
-                                        if (!restrictionData.razon.isNullOrBlank()) {
+                                        if (!restrictionData.motivo.isNullOrBlank()) {
                                             Text(
-                                                text = restrictionData.razon,
+                                                text = restrictionData.motivo,
                                                 fontSize = 12.sp,
                                                 color = Color(0xFF666666),
                                                 style = MaterialTheme.typography.bodySmall,

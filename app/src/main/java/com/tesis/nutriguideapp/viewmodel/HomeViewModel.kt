@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tesis.nutriguideapp.api.UserService
 import com.tesis.nutriguideapp.api.RetrofitInstance
+import com.tesis.nutriguideapp.utils.RestrictionMapper
 import com.tesis.nutriguideapp.utils.TokenManager
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
@@ -83,7 +84,7 @@ class HomeViewModel : ViewModel() {
                     response = restrictionsResponse,
                     tag = "HomeViewModel/Restrictions",
                     onSuccess = { restrictions ->
-                        _userRestrictions.value = restrictions ?: emptyList()
+                        _userRestrictions.value = RestrictionMapper.toDisplayNames(restrictions ?: emptyList())
                         android.util.Log.d("HomeViewModel", "Restricciones obtenidas: ${restrictions?.size ?: 0}")
                     },
                     onError = { errorMessage ->

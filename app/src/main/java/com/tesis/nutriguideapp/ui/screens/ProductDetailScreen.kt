@@ -33,6 +33,7 @@ import com.tesis.nutriguideapp.model.ProductAnalysis
 import com.tesis.nutriguideapp.ui.theme.Green40
 import com.tesis.nutriguideapp.ui.theme.Yellow40
 import com.tesis.nutriguideapp.utils.CoilUtils
+import com.tesis.nutriguideapp.utils.RestrictionMapper
 import com.tesis.nutriguideapp.viewmodel.ProductDetailViewModel
 import com.tesis.nutriguideapp.utils.DateFormatter
 import com.tesis.nutriguideapp.viewmodel.RestriccionesViewModel
@@ -336,45 +337,39 @@ fun ProductDetailScreen(
     )
 }
 
-/**
- * Convierte un objeto ProductAnalysis a un string formateado para mostrar en la UI
- */
 private fun formatProductAnalysis(productAnalysis: ProductAnalysis): String {
     return buildString {
         try {
-            appendLine("🧪 Ingredientes:")
-            appendLine(productAnalysis.ingredientes.ifEmpty { "No disponible" })
+            appendLine("Ingredientes:")
+            if (productAnalysis.ingredients.isEmpty()) {
+                appendLine("No disponible")
+            } else {
+                productAnalysis.ingredients.forEach { ingredient ->
+                    val conf = (ingredient.confidence * 100).toInt()
+                    appendLine("  - ${ingredient.nameEs} (${ingredient.nameEn}) [$conf%]")
+                    if (ingredient.category.isNotBlank()) {
+                        appendLine("    Categoría: ${ingredient.category}")
+                    }
+                }
+            }
             appendLine()
             
-            if (!productAnalysis.puedeContener.isNullOrBlank()) {
-                appendLine("⚠️ Puede contener:")
-                appendLine(productAnalysis.puedeContener)
-                appendLine()
-            }
-            
-            appendLine("📊 Clasificación por restricciones:")
-            if (productAnalysis.clasificacion.isEmpty()) {
+            appendLine("Clasificación por restricciones:")
+            if (productAnalysis.restrictions.isEmpty()) {
                 appendLine("No hay información de restricciones disponible")
             } else {
-                productAnalysis.clasificacion.forEach { (restriccion, resultado) ->
-                    val emoji = if (resultado.apto) "✅" else "❌"
-                    appendLine("$emoji $restriccion: ${if (resultado.apto) "Apto" else "No apto"}")
-                    if (!resultado.razon.isNullOrBlank()) {
-                        appendLine("   Razón: ${resultado.razon}")
+                productAnalysis.restrictions.forEach { (apiName, resultado) ->
+                    val displayName = RestrictionMapper.toDisplayName(apiName)
+                    val status = if (resultado.apto) "Apto" else "No apto"
+                    val indicator = if (resultado.apto) "+" else "-"
+                    appendLine("$indicator $displayName: $status")
+                    if (!resultado.motivo.isNullOrBlank()) {
+                        appendLine("   Motivo: ${resultado.motivo}")
                     }
                 }
             }
         } catch (e: Exception) {
-            appendLine("⚠️ Error al formatear análisis: ${e.message}")
-            appendLine()
-            appendLine("Datos parciales disponibles:")
-            appendLine("Ingredientes: ${productAnalysis.ingredientes.take(100)}")
-            if (!productAnalysis.puedeContener.isNullOrBlank()) {
-                appendLine("Puede contener: ${productAnalysis.puedeContener.take(100)}")
-            }
-            if (productAnalysis.clasificacion.isNotEmpty()) {
-                appendLine("Restricciones: ${productAnalysis.clasificacion.keys.joinToString(", ")}")
-            }
+            appendLine("Error al formatear análisis: ${e.message}")
         }
     }
 }

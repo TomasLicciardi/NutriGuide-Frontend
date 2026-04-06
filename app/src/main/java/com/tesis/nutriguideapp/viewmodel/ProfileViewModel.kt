@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tesis.nutriguideapp.api.RetrofitInstance
 import com.tesis.nutriguideapp.api.UserService
+import com.tesis.nutriguideapp.utils.RestrictionMapper
 import kotlinx.coroutines.launch
 
 class ProfileViewModel : ViewModel() {
@@ -40,7 +41,7 @@ class ProfileViewModel : ViewModel() {
                     onSuccess = { profile ->
                         _username.value = profile.username
                         _email.value = profile.email
-                        _restrictions.value = profile.restrictions
+                        _restrictions.value = RestrictionMapper.toDisplayNames(profile.restrictions)
                         
                         android.util.Log.d("ProfileViewModel", "Perfil cargado: ${profile.username}, restricciones: ${profile.restrictions.size}")
                     },

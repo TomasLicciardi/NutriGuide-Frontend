@@ -85,7 +85,7 @@ class UploadViewModel : ViewModel() {
                     if (analysisResult != null) {
                         _analysisResponse.value = analysisResult
                         _analysisState.value = AnalysisResult.Success(analysisResult)
-                        android.util.Log.d("UploadViewModel", "Análisis exitoso: ${analysisResult.productId}")
+                        android.util.Log.d("UploadViewModel", "Análisis exitoso: verdict=${analysisResult.userVerdict}")
                     } else {
                         val errorMsg = "La respuesta del servidor está vacía"
                         _error.value = errorMsg

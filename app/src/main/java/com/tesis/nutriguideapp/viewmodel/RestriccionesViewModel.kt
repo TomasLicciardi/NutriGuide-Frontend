@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.tesis.nutriguideapp.api.RetrofitInstance
 import com.tesis.nutriguideapp.api.UserService
 import com.tesis.nutriguideapp.model.UserRestrictionsRequest
+import com.tesis.nutriguideapp.utils.RestrictionMapper
 import kotlinx.coroutines.launch
 
 class RestriccionesViewModel : ViewModel() {
@@ -16,10 +17,8 @@ class RestriccionesViewModel : ViewModel() {
 
     private val _userRestrictions = mutableStateOf<Set<String>>(emptySet())
     val userRestrictions: State<Set<String>> = _userRestrictions
-    private val _availableRestrictions = mutableStateOf(listOf(
-        "Sin gluten", "Sin lactosa", "Vegano", 
-        "Sin frutos secos"
-    ))
+
+    private val _availableRestrictions = mutableStateOf(RestrictionMapper.allDisplayNames)
     val availableRestrictions: State<List<String>> = _availableRestrictions
 
     private val _error = mutableStateOf<String?>(null)
@@ -40,8 +39,8 @@ class RestriccionesViewModel : ViewModel() {
                 com.tesis.nutriguideapp.utils.ApiErrorHandler.processResponse(
                     response = response,
                     tag = "RestriccionesViewModel",
-                    onSuccess = { restrictions ->
-                        _userRestrictions.value = restrictions.toSet()
+                    onSuccess = { apiRestrictions ->
+                        _userRestrictions.value = RestrictionMapper.toDisplayNames(apiRestrictions).toSet()
                     },
                     onError = { errorMessage ->
                         _error.value = errorMessage
@@ -72,7 +71,8 @@ class RestriccionesViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val service = RetrofitInstance.getAuthenticatedRetrofit(context).create(UserService::class.java)
-                val request = UserRestrictionsRequest(_userRestrictions.value.toList())
+                val apiRestrictions = RestrictionMapper.toApiNames(_userRestrictions.value)
+                val request = UserRestrictionsRequest(apiRestrictions)
                 val response = service.updateUserRestrictions(request)
                 
                 com.tesis.nutriguideapp.utils.ApiErrorHandler.processResponse(
