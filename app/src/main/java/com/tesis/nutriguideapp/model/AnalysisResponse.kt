@@ -2,35 +2,68 @@ package com.tesis.nutriguideapp.model
 
 import com.google.gson.annotations.SerializedName
 
+/**
+ * Schema del endpoint /analysis/.
+ *
+ * Pipeline fact base / rule base — los predicados operan sobre IngredientFacts
+ * con trazabilidad de fuente por tag.
+ */
 data class AnalysisResponse(
     @SerializedName("user_verdict") val userVerdict: Boolean,
     @SerializedName("restrictions") val restrictions: Map<String, RestrictionDetail> = emptyMap(),
     @SerializedName("ingredients") val ingredients: List<IngredientDetail> = emptyList(),
-    @SerializedName("allergen_warnings") val allergenWarnings: String? = null,
+    @SerializedName("declaration") val declaration: LegalDeclaration = LegalDeclaration(),
     @SerializedName("overall_confidence") val overallConfidence: Float = 0f,
-    @SerializedName("processing_time") val processingTime: Float? = null,
-    @SerializedName("stats") val stats: Map<String, Int>? = null
+    @SerializedName("stats") val stats: AnalysisStats? = null
 )
 
 data class RestrictionDetail(
     @SerializedName("apto") val apto: Boolean,
-    @SerializedName("motivo") val motivo: String? = null
+    @SerializedName("motivo") val motivo: String? = null,
+    @SerializedName("fuente") val fuente: String = "ingredient_analysis",
+    @SerializedName("confidence") val confidence: Float = 0f,
+    @SerializedName("ingrediente_disparador") val ingredienteDisparador: String? = null
 )
 
 data class IngredientDetail(
     @SerializedName("name_es") val nameEs: String = "",
-    @SerializedName("name_en") val nameEn: String = "",
+    @SerializedName("name_en") val nameEn: String? = null,
     @SerializedName("category") val category: String = "",
-    @SerializedName("origin") val origin: String? = null,
+    @SerializedName("origin") val origin: String = "unknown",
     @SerializedName("function_tag") val functionTag: String? = null,
-    @SerializedName("description_es") val descriptionEs: String? = null,
-    @SerializedName("is_tacc_safe") val isTaccSafe: Boolean? = null,
-    @SerializedName("is_lactose_safe") val isLactoseSafe: Boolean? = null,
-    @SerializedName("is_nut_safe") val isNutSafe: Boolean? = null,
-    @SerializedName("is_vegan_safe") val isVeganSafe: Boolean? = null,
+    @SerializedName("codex_ins_code") val codexInsCode: Int? = null,
+    @SerializedName("codex_ins_subcode") val codexInsSubcode: String? = null,
+    @SerializedName("is_flavoring") val isFlavoring: Boolean = false,
+    @SerializedName("flavoring_type") val flavoringType: String? = null,
+    @SerializedName("target_sensory") val targetSensory: String? = null,
+    @SerializedName("allergens") val allergens: List<String> = emptyList(),
+    @SerializedName("contains") val contains: List<String> = emptyList(),
+    @SerializedName("derived_from") val derivedFrom: List<String> = emptyList(),
     @SerializedName("confidence") val confidence: Float = 0f,
-    @SerializedName("resolved_by") val resolvedBy: String = "unresolved",
-    @SerializedName("evidence") val evidence: List<String> = emptyList()
+    @SerializedName("sources") val sources: List<String> = emptyList(),
+    @SerializedName("description_es") val descriptionEs: String? = null
+)
+
+data class LegalDeclaration(
+    @SerializedName("contains") val contains: List<String> = emptyList(),
+    @SerializedName("may_contain") val mayContain: List<String> = emptyList(),
+    @SerializedName("positive_claims") val positiveClaims: List<String> = emptyList(),
+    @SerializedName("raw_text") val rawText: String? = null
+)
+
+data class AnalysisStats(
+    @SerializedName("total_ingredients") val totalIngredients: Int = 0,
+    @SerializedName("total_flavorings") val totalFlavorings: Int = 0,
+    @SerializedName("resolved_by_legal") val resolvedByLegal: Int = 0,
+    @SerializedName("resolved_by_codex") val resolvedByCodex: Int = 0,
+    @SerializedName("resolved_by_off") val resolvedByOff: Int = 0,
+    @SerializedName("resolved_by_kb") val resolvedByKb: Int = 0,
+    @SerializedName("resolved_by_gemini") val resolvedByGemini: Int = 0,
+    @SerializedName("resolved_by_llm") val resolvedByLlm: Int = 0,
+    @SerializedName("resolved_by_policy") val resolvedByPolicy: Int = 0,
+    @SerializedName("unresolved") val unresolved: Int = 0,
+    @SerializedName("gemini_calls") val geminiCalls: Int = 0,
+    @SerializedName("processing_time_ms") val processingTimeMs: Float = 0f
 )
 
 data class BackendErrorResponse(
