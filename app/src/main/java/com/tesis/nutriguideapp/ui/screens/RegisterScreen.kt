@@ -205,7 +205,7 @@ fun RegisterScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 16.dp),
-                        maxItemsInEachRow = 3
+                        maxItemsInEachRow = 2
                     ) {
                         availableRestrictions.forEach { restriction ->
                             val isSelected = selectedRestrictions.contains(restriction)

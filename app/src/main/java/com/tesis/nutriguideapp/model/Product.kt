@@ -40,7 +40,8 @@ data class Restriction(
     val motivo: String? = null,
     val fuente: String = "ingredient_analysis",
     val confidence: Float = 0f,
-    val ingredienteDisparador: String? = null
+    val ingredienteDisparador: String? = null,
+    val triggerIngredients: List<TriggerIngredient> = emptyList()
 )
 
 data class ProductIngredientItem(
@@ -79,7 +80,10 @@ class ProductAnalysisDeserializer : JsonDeserializer<ProductAnalysis> {
             val jsonObject = when {
                 json.isJsonPrimitive && json.asJsonPrimitive.isString -> {
                     try {
-                        JsonParser.parseString(json.asString).asJsonObject
+                        // JsonParser().parse(...) funciona en todas las versiones de Gson.
+                        // JsonParser.parseString(...) requeriría Gson >= 2.8.6.
+                        @Suppress("DEPRECATION")
+                        JsonParser().parse(json.asString).asJsonObject
                     } catch (e: Exception) {
                         Log.e("ProductAnalysisDeser", "Error parseando JSON string: ${e.message}")
                         return ProductAnalysis()
@@ -93,12 +97,25 @@ class ProductAnalysisDeserializer : JsonDeserializer<ProductAnalysis> {
             jsonObject.get("restrictions")?.takeIf { it.isJsonObject }?.asJsonObject?.entrySet()?.forEach { entry ->
                 try {
                     val r = entry.value.asJsonObject
+                    val triggers = r.get("trigger_ingredients")
+                        ?.takeIf { it.isJsonArray }?.asJsonArray
+                        ?.mapNotNull { el ->
+                            try {
+                                val t = el.asJsonObject
+                                TriggerIngredient(
+                                    name = t.get("name")?.asString ?: "",
+                                    explanation = t.get("explanation")?.asString ?: "",
+                                    allergen = t.get("allergen")?.asString ?: ""
+                                )
+                            } catch (e: Exception) { null }
+                        } ?: emptyList()
                     restrictionsMap[entry.key] = Restriction(
                         apto = r.get("apto")?.asBoolean ?: true,
                         motivo = r.get("motivo")?.takeIf { !it.isJsonNull }?.asString,
                         fuente = r.get("fuente")?.takeIf { !it.isJsonNull }?.asString ?: "ingredient_analysis",
                         confidence = r.get("confidence")?.asFloat ?: 0f,
-                        ingredienteDisparador = r.get("ingrediente_disparador")?.takeIf { !it.isJsonNull }?.asString
+                        ingredienteDisparador = r.get("ingrediente_disparador")?.takeIf { !it.isJsonNull }?.asString,
+                        triggerIngredients = triggers
                     )
                 } catch (e: Exception) {
                     Log.e("ProductAnalysisDeser", "Error restriction ${entry.key}: ${e.message}")

@@ -55,7 +55,13 @@ fun ProductDetailScreen(
     
     val context = LocalContext.current
     var showFullAnalysis by remember { mutableStateOf(false) }
+    var selectedTrigger by remember { mutableStateOf<com.tesis.nutriguideapp.model.TriggerIngredient?>(null) }
     val scrollState = rememberScrollState()
+
+    com.tesis.nutriguideapp.ui.components.TriggerExplanationDialog(
+        trigger = selectedTrigger,
+        onDismiss = { selectedTrigger = null }
+    )
     
     // Cargar el producto y las restricciones del usuario cuando se inicia la pantalla
     LaunchedEffect(productId) {
@@ -239,6 +245,31 @@ fun ProductDetailScreen(
                                     }
                                 }
                                 
+                                // Ingredientes que dispararon cada restricción (tocables)
+                                val blockedWithTriggers = p.resultJson.restrictions
+                                    .filter { !it.value.apto && it.value.triggerIngredients.isNotEmpty() }
+                                if (blockedWithTriggers.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Text(
+                                        text = "Ingredientes detectados (tocá para ver más):",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    blockedWithTriggers.forEach { (apiName, restriction) ->
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                        Text(
+                                            text = RestrictionMapper.toDisplayName(apiName),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = Color(0xFFFF9800)
+                                        )
+                                        com.tesis.nutriguideapp.ui.components.TriggerIngredientChips(
+                                            triggers = restriction.triggerIngredients.take(6),
+                                            onTriggerClick = { selectedTrigger = it }
+                                        )
+                                    }
+                                }
+
                                 // Botón para mostrar el análisis completo
                                 TextButton(
                                     onClick = { showFullAnalysis = !showFullAnalysis },
@@ -342,29 +373,32 @@ private fun formatProductAnalysis(productAnalysis: ProductAnalysis): String {
         try {
             appendLine("Ingredientes:")
             if (productAnalysis.ingredients.isEmpty()) {
-                appendLine("No disponible")
+                appendLine("  No disponible")
             } else {
                 productAnalysis.ingredients.forEach { ingredient ->
-                    val conf = (ingredient.confidence * 100).toInt()
-                    appendLine("  - ${ingredient.nameEs} (${ingredient.nameEn}) [$conf%]")
-                    if (ingredient.category.isNotBlank()) {
-                        appendLine("    Categoría: ${ingredient.category}")
+                    val name = ingredient.nameEs.takeIf { it.isNotBlank() } ?: ingredient.nameEn
+                    if (name.isNotBlank()) {
+                        appendLine("  • $name")
                     }
                 }
             }
             appendLine()
-            
+
             appendLine("Clasificación por restricciones:")
             if (productAnalysis.restrictions.isEmpty()) {
-                appendLine("No hay información de restricciones disponible")
+                appendLine("  No hay información de restricciones disponible")
             } else {
                 productAnalysis.restrictions.forEach { (apiName, resultado) ->
                     val displayName = RestrictionMapper.toDisplayName(apiName)
                     val status = if (resultado.apto) "Apto" else "No apto"
-                    val indicator = if (resultado.apto) "+" else "-"
-                    appendLine("$indicator $displayName: $status")
-                    if (!resultado.motivo.isNullOrBlank()) {
-                        appendLine("   Motivo: ${resultado.motivo}")
+                    val indicator = if (resultado.apto) "✓" else "✗"
+                    appendLine("  $indicator $displayName: $status")
+                    if (!resultado.apto && !resultado.motivo.isNullOrBlank()) {
+                        appendLine("      ${resultado.motivo}")
+                    }
+                    if (!resultado.apto && resultado.triggerIngredients.isNotEmpty()) {
+                        val names = resultado.triggerIngredients.take(6).joinToString(", ") { it.name }
+                        appendLine("      Encontrado en la etiqueta: $names")
                     }
                 }
             }

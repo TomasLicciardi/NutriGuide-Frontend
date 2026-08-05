@@ -261,6 +261,11 @@ fun CameraScreen(
     // Dialog de resultado exitoso
     if (analyzeSuccess && analysisResponse != null) {
         val response = analysisResponse!!
+        var selectedTrigger by remember { mutableStateOf<com.tesis.nutriguideapp.model.TriggerIngredient?>(null) }
+        com.tesis.nutriguideapp.ui.components.TriggerExplanationDialog(
+            trigger = selectedTrigger,
+            onDismiss = { selectedTrigger = null }
+        )
         AlertDialog(
             onDismissRequest = { },
             title = {

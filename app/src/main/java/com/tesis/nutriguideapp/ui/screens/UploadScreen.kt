@@ -246,6 +246,11 @@ fun UploadScreen(
         
         // Modal para mostrar resultado del análisis
         if (analysisResponse != null) {
+            var selectedTrigger by remember { mutableStateOf<com.tesis.nutriguideapp.model.TriggerIngredient?>(null) }
+            com.tesis.nutriguideapp.ui.components.TriggerExplanationDialog(
+                trigger = selectedTrigger,
+                onDismiss = { selectedTrigger = null }
+            )
             AlertDialog(
                 onDismissRequest = { /* No permitir cerrar tocando fuera */ },
                 title = {
@@ -323,6 +328,11 @@ fun UploadScreen(
                             }
                         }
                         
+                        // Advertencia del cross-check OCR ↔ ingredientes
+                        analysisResponse?.declaration?.warnings?.takeIf { it.isNotEmpty() }?.let {
+                            DeclarationWarningsCard(it)
+                        }
+
                         // Restricciones detectadas si hay
                         val restrictionsNotSuitable = try {
                             analysisResponse?.restrictions?.filter { !it.value.apto }
@@ -355,13 +365,39 @@ fun UploadScreen(
                                     Column(
                                         modifier = Modifier.padding(12.dp)
                                     ) {
-                                        Text(
-                                            text = "• ${RestrictionMapper.toDisplayName(restriction).uppercase()}",
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 13.sp,
-                                            color = Color(0xFFFF9800)
-                                        )
-                                        if (!restrictionData.motivo.isNullOrBlank()) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = "• ${RestrictionMapper.toDisplayName(restriction).uppercase()}",
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 13.sp,
+                                                color = Color(0xFFFF9800)
+                                            )
+                                            val deducido = restrictionData.fuente != "legal_declaration"
+                                            Text(
+                                                text = if (deducido) "Deducido por análisis" else "Declarado por el fabricante",
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = if (deducido) Color(0xFF2E7D32) else Color(0xFF616161)
+                                            )
+                                        }
+                                        // Lista COMPLETA de ingredientes disparadores con su explicación.
+                                        // El campo `motivo` solo nombra el primero; los técnicos (carmín,
+                                        // goma laca, lactosuero...) viven en trigger_ingredients.
+                                        if (restrictionData.triggerIngredients.isNotEmpty()) {
+                                            restrictionData.triggerIngredients.forEach { trigger ->
+                                                Text(
+                                                    text = "• ${trigger.name} — ${trigger.explanation}",
+                                                    fontSize = 12.sp,
+                                                    color = Color(0xFF666666),
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    modifier = Modifier.padding(top = 4.dp)
+                                                )
+                                            }
+                                        } else if (!restrictionData.motivo.isNullOrBlank()) {
                                             Text(
                                                 text = restrictionData.motivo,
                                                 fontSize = 12.sp,
@@ -692,13 +728,6 @@ fun SimpleErrorModal(
                         ) {
                             Text(secondaryButtonText, color = primaryColor)
                         }
-                        
-                        TextButton(
-                            onClick = onDismiss,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Cancelar", color = Color.Gray)
-                        }
                     }
                 }
             }
@@ -850,3 +879,46 @@ fun TipCard(
         }
     }
 }
+
+// Banner de advertencia: la etiqueta declara un alérgeno que ningún ingrediente
+// visible justifica (posible alucinación del OCR o contaminación cruzada).
+@Composable
+fun DeclarationWarningsCard(warnings: List<String>) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 12.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1))
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            Icon(
+                imageVector = Icons.Default.Warning,
+                contentDescription = "Advertencia",
+                tint = Color(0xFFF9A825),
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Column {
+                Text(
+                    text = "Advertencia sobre la etiqueta",
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 13.sp,
+                    color = Color(0xFFF57F17)
+                )
+                warnings.forEach { w ->
+                    Text(
+                        text = w,
+                        fontSize = 12.sp,
+                        color = Color(0xFF8D6E63),
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+

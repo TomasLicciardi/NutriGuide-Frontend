@@ -10,7 +10,24 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 object RetrofitInstance {
+    // ─────────────────────────────────────────────────────────────
+    // URL del backend NutriGuide.
+    //
+    // Cambiá la línea activa según el entorno donde estés probando:
+    //
+    //   • Emulador Android Studio       → http://10.0.2.2:8000/
+    //   • Dispositivo físico (WiFi)     → http://<IP-de-tu-PC>:8000/
+    //                                      (ej: http://192.168.1.42:8000/)
+    //   • UM Cloud por ZeroTier / VPN   → http://10.201.1.25:<NODEPORT>/
+    //   • UM Cloud con Ingress          → http://nutriguide.um.local/
+    //                                      (configurar /etc/hosts o DNS)
+    //
+    // El network_security_config.xml ya tiene whitelisted estas IPs.
+    // Si agregás otra, también actualizá ese archivo.
+    // ─────────────────────────────────────────────────────────────
     const val BASE_URL = "http://10.0.2.2:8000/"
+    // const val BASE_URL = "http://10.201.1.25:30080/"   // ← UM Cloud NodePort (ajustar puerto)
+    // const val BASE_URL = "http://192.168.1.42:8000/"   // ← LAN local (poner tu IP)
 
     // Configurar Gson con deserializador personalizado
     private val gson = GsonBuilder()

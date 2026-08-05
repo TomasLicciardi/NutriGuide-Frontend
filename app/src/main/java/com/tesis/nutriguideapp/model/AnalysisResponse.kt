@@ -22,7 +22,14 @@ data class RestrictionDetail(
     @SerializedName("motivo") val motivo: String? = null,
     @SerializedName("fuente") val fuente: String = "ingredient_analysis",
     @SerializedName("confidence") val confidence: Float = 0f,
-    @SerializedName("ingrediente_disparador") val ingredienteDisparador: String? = null
+    @SerializedName("ingrediente_disparador") val ingredienteDisparador: String? = null,
+    @SerializedName("trigger_ingredients") val triggerIngredients: List<TriggerIngredient> = emptyList()
+)
+
+data class TriggerIngredient(
+    @SerializedName("name") val name: String,
+    @SerializedName("explanation") val explanation: String,
+    @SerializedName("allergen") val allergen: String
 )
 
 data class IngredientDetail(
@@ -48,7 +55,8 @@ data class LegalDeclaration(
     @SerializedName("contains") val contains: List<String> = emptyList(),
     @SerializedName("may_contain") val mayContain: List<String> = emptyList(),
     @SerializedName("positive_claims") val positiveClaims: List<String> = emptyList(),
-    @SerializedName("raw_text") val rawText: String? = null
+    @SerializedName("raw_text") val rawText: String? = null,
+    @SerializedName("warnings") val warnings: List<String> = emptyList()
 )
 
 data class AnalysisStats(
@@ -58,6 +66,7 @@ data class AnalysisStats(
     @SerializedName("resolved_by_codex") val resolvedByCodex: Int = 0,
     @SerializedName("resolved_by_off") val resolvedByOff: Int = 0,
     @SerializedName("resolved_by_kb") val resolvedByKb: Int = 0,
+    @SerializedName("resolved_by_pubchem") val resolvedByPubchem: Int = 0,
     @SerializedName("resolved_by_gemini") val resolvedByGemini: Int = 0,
     @SerializedName("resolved_by_llm") val resolvedByLlm: Int = 0,
     @SerializedName("resolved_by_policy") val resolvedByPolicy: Int = 0,

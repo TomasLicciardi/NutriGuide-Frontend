@@ -76,6 +76,11 @@ class RegisterViewModel : ViewModel() {
             return
         }
 
+        if (_password.value.length < 6) {
+            onError("La contraseña debe tener al menos 6 caracteres")
+            return
+        }
+
         if (_password.value != _confirmPassword.value) {
             onError("Las contraseñas no coinciden")
             return
