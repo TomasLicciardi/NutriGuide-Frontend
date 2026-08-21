@@ -278,7 +278,7 @@ fun ProductDetailScreen(
                                         .padding(top = 8.dp)
                                 ) {
                                     Text(
-                                        text = if (showFullAnalysis) "Ocultar análisis completo" else "Ver análisis completo"
+                                        text = if (showFullAnalysis) "Ocultar ingredientes" else "Ver ingredientes"
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Icon(
@@ -297,7 +297,7 @@ fun ProductDetailScreen(
                                         HorizontalDivider()
                                         Spacer(modifier = Modifier.height(8.dp))
                                         Text(
-                                            text = "Análisis completo:",
+                                            text = "Ingredientes:",
                                             style = MaterialTheme.typography.titleSmall,
                                             fontWeight = FontWeight.SemiBold
                                         )
@@ -371,34 +371,13 @@ fun ProductDetailScreen(
 private fun formatProductAnalysis(productAnalysis: ProductAnalysis): String {
     return buildString {
         try {
-            appendLine("Ingredientes:")
             if (productAnalysis.ingredients.isEmpty()) {
-                appendLine("  No disponible")
+                appendLine("No disponible")
             } else {
                 productAnalysis.ingredients.forEach { ingredient ->
                     val name = ingredient.nameEs.takeIf { it.isNotBlank() } ?: ingredient.nameEn
                     if (name.isNotBlank()) {
-                        appendLine("  • $name")
-                    }
-                }
-            }
-            appendLine()
-
-            appendLine("Clasificación por restricciones:")
-            if (productAnalysis.restrictions.isEmpty()) {
-                appendLine("  No hay información de restricciones disponible")
-            } else {
-                productAnalysis.restrictions.forEach { (apiName, resultado) ->
-                    val displayName = RestrictionMapper.toDisplayName(apiName)
-                    val status = if (resultado.apto) "Apto" else "No apto"
-                    val indicator = if (resultado.apto) "✓" else "✗"
-                    appendLine("  $indicator $displayName: $status")
-                    if (!resultado.apto && !resultado.motivo.isNullOrBlank()) {
-                        appendLine("      ${resultado.motivo}")
-                    }
-                    if (!resultado.apto && resultado.triggerIngredients.isNotEmpty()) {
-                        val names = resultado.triggerIngredients.take(6).joinToString(", ") { it.name }
-                        appendLine("      Encontrado en la etiqueta: $names")
+                        appendLine("• $name")
                     }
                 }
             }

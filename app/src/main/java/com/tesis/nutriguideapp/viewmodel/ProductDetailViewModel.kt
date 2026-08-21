@@ -66,7 +66,8 @@ class ProductDetailViewModel : ViewModel() {
                     if (restrictions.isNotEmpty()) {
                         restrictions.forEach { (apiName, restriction) ->
                             val displayName = RestrictionMapper.toDisplayName(apiName)
-                            resultMap["Contiene $displayName"] = !restriction.apto
+                            val label = if (restriction.apto) "Apto — $displayName" else "No apto — $displayName"
+                            resultMap[label] = !restriction.apto
                         }
                     }
                     
