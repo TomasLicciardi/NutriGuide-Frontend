@@ -8,6 +8,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
@@ -24,6 +25,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.tesis.nutriguideapp.api.RetrofitInstance
 import com.tesis.nutriguideapp.ui.theme.GreenPrimary
 import com.tesis.nutriguideapp.ui.theme.WhiteBackground
 import com.tesis.nutriguideapp.viewmodel.LoginViewModel
@@ -44,6 +46,9 @@ fun LoginScreen(
     val password by viewModel.password
     val loading by viewModel.loading
     val passwordVisible by viewModel.passwordVisible
+
+    var showServerDialog by remember { mutableStateOf(false) }
+    var serverUrl by remember { mutableStateOf(RetrofitInstance.BASE_URL) }
 
     Box(
         modifier = Modifier
@@ -231,6 +236,54 @@ fun LoginScreen(
             }
         }
         
+        // Botón discreto de configuración de servidor (engranaje tenue en la esquina)
+        IconButton(
+            onClick = {
+                serverUrl = RetrofitInstance.BASE_URL
+                showServerDialog = true
+            },
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(6.dp)
+                .size(30.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Settings,
+                contentDescription = "Configurar servidor",
+                tint = GreenPrimary.copy(alpha = 0.3f),
+                modifier = Modifier.size(18.dp)
+            )
+        }
+
+        if (showServerDialog) {
+            AlertDialog(
+                onDismissRequest = { showServerDialog = false },
+                title = { Text("Servidor") },
+                text = {
+                    OutlinedTextField(
+                        value = serverUrl,
+                        onValueChange = { serverUrl = it },
+                        label = { Text("URL del backend") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        RetrofitInstance.setBaseUrl(context, serverUrl)
+                        showServerDialog = false
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar("Servidor guardado: ${RetrofitInstance.BASE_URL}")
+                        }
+                    }) { Text("Guardar") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showServerDialog = false }) { Text("Cancelar") }
+                }
+            )
+        }
+
         // Snackbar para errores y confirmaciones
         SnackbarHost(
             hostState = snackbarHostState,

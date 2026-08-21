@@ -9,12 +9,14 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
+import com.tesis.nutriguideapp.api.RetrofitInstance
 import com.tesis.nutriguideapp.ui.screens.*
 import com.tesis.nutriguideapp.ui.theme.NutriGuideAppTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        RetrofitInstance.init(applicationContext)
         setContent {
             NutriGuideAppTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
