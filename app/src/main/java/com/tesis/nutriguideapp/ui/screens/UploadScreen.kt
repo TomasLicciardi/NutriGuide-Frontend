@@ -365,25 +365,12 @@ fun UploadScreen(
                                     Column(
                                         modifier = Modifier.padding(12.dp)
                                     ) {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Text(
-                                                text = "• ${RestrictionMapper.toDisplayName(restriction).uppercase()}",
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 13.sp,
-                                                color = Color(0xFFFF9800)
-                                            )
-                                            val deducido = restrictionData.fuente != "legal_declaration"
-                                            Text(
-                                                text = if (deducido) "Deducido por análisis" else "Declarado por el fabricante",
-                                                fontSize = 10.sp,
-                                                fontWeight = FontWeight.SemiBold,
-                                                color = if (deducido) Color(0xFF2E7D32) else Color(0xFF616161)
-                                            )
-                                        }
+                                        Text(
+                                            text = "• ${RestrictionMapper.toDisplayName(restriction).uppercase()}",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 13.sp,
+                                            color = Color(0xFFFF9800)
+                                        )
                                         // Lista COMPLETA de ingredientes disparadores con su explicación.
                                         // El campo `motivo` solo nombra el primero; los técnicos (carmín,
                                         // goma laca, lactosuero...) viven en trigger_ingredients.
